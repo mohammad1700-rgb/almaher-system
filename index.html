@@ -1481,8 +1481,7 @@ function pWeekly(){
     const isActive=d.date===activeDate;
     html+='<th style="text-align:center;font-size:11px;min-width:140px'+(isActive?';background:var(--gold-3);border:2px solid var(--gold)':'')+'">'
       +d.label+(isActive?' 📌':'')
-      +(d.dayIdx!==5?'<br><button onclick="fillDay(''+d.date+'')" style="font-size:9px;padding:1px 6px;border:1px solid var(--gold);border-radius:4px;cursor:pointer;background:var(--gold-3);color:var(--navy);margin-top:3px">✓ تعبئة الكل</button>':'')
-      +'</th>';
+      +(d.dayIdx!==5?'<br><button data-date="'+d.date+'" onclick="fillDay(this.dataset.date)" style="font-size:9px;padding:1px 6px;border:1px solid var(--gold);border-radius:4px;cursor:pointer;background:var(--gold-3);color:var(--navy);margin-top:3px">✓ تعبئة الكل</button>':'')+'</th>';
   });
   html+='<th style="min-width:130px">الخطة<br>'
     +(planWindowOpen?'<button onclick="fillAllPlan()" style="font-size:9px;padding:1px 6px;border:1px solid #2e7d32;border-radius:4px;cursor:pointer;background:#e8f5e9;color:#2e7d32;margin-top:3px">✓ تعبئة الكل</button>':'<span style="font-size:9px;color:var(--muted)">يُفتح الأحد 12م</span>')
