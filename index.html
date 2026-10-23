@@ -3038,7 +3038,7 @@ function render(){
   ${tabbar()}`;
   femize($('app'));
   /* ملء حقول البحث من الحالة واستعادة التركيز */
-  requestAnimationFrame(()=>{
+  const _restoreFocus = ()=>{
     const sqMap = {'sq-ppl': ui.q||'', 'sq-stu': ui.sq||'', 'sq-cir': ui.cq||''};
     Object.entries(sqMap).forEach(([id, val])=>{
       const el = document.getElementById(id);
@@ -3048,12 +3048,15 @@ function render(){
       const el = document.getElementById(_focusedId);
       if(el && el.tagName === 'INPUT'){
         el.focus();
-        if(_selStart !== null){
-          try{ el.setSelectionRange(_selStart, _selEnd); }catch(e){}
-        }
+        const len = el.value.length;
+        const pos = (_selStart !== null && _selStart <= len) ? _selStart : len;
+        const end = (_selEnd   !== null && _selEnd   <= len) ? _selEnd   : len;
+        try{ el.setSelectionRange(pos, end); }catch(e){}
       }
     }
-  });
+  };
+  requestAnimationFrame(_restoreFocus);
+  setTimeout(_restoreFocus, 50);
 }
 const ICO = {
  home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
