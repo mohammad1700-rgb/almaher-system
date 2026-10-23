@@ -760,11 +760,6 @@ function stat(k,v,acc,target,extra){
 const PAGES = () => ({
   home:    ['لوحة البرنامج', true],
   staffdata:['بيانات الطاقم الإداري والتعليمي', isMgr()],
-  suggestions:['الاقتراحات والشكاوى', true],
-  ranking:['التقييم والترتيب', isMgr()],
-  allhourly:['التقرير الإجمالي', isMgr()],
-  tasks:['مهامي ومسؤولياتي', true],
-  stats:['الإحصاءات الشاملة', isMgr()],
   activity: ['نشاط المتابعين', isMgr()],
   people:  ['المتابعون', true],
   students:['الطلاب', true],
@@ -3032,7 +3027,7 @@ function modal(title, body, foot){
 function closeModal(){ $('lay')?.remove(); }
 
 /* ---------------- الهيكل والتوجيه ---------------- */
-let ui = {q:'',sugForm:false,openFollower:null,taskForm:false,sq:'',cq:'',sdq:'',sdRole:'',sdOpen:null,show:'active',day:null,fid:null,sid:null,kind:null,ec:null,pnode:null,atab:'sanc',ttab:'students',rtab:'week',dq:'',t:null};
+let ui = {q:'',sq:'',cq:'',sdq:'',sdRole:'',sdOpen:null,show:'active',day:null,fid:null,sid:null,kind:null,ec:null,pnode:null,atab:'sanc',ttab:'students',rtab:'week',dq:'',t:null};
 function go(p,show){
   closeSheet(); PAGE=p;
   if(show) ui.show=show; else if(p==='students') ui.show='active';
@@ -3321,253 +3316,6 @@ function pActivity(){
   </div>`;
 }
 
-
-function pHonorBoard(){
-  const sec = curSec();
-  const followers = S.people.filter(p=>p.active&&p.section===sec&&p.role.startsWith('متابع'));
-  const scored = followers.map(p=>{
-    const rows = reportRows(WEEK, p.id);
-    if(!rows.length) return {p, score:0};
-    const done = rows.filter(r=>r.done);
-    return {p, score: done.length ? done.reduce((a,r)=>a+r.pct,0)/done.length : 0};
-  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,3);
-  if(!scored.length) return '';
-  const medals=['🥇','🥈','🥉'], ranks=['الأول','الثاني','الثالث'];
-  return `<div style="background:linear-gradient(135deg,#1a2340,#2d3a6b);color:#fff;border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-    <div style="font-size:13px;font-weight:700;color:var(--gold-2);white-space:nowrap">🏆 لوحة شرف المتابعين المتميزين</div>
-    <div style="display:flex;gap:20px;flex-wrap:wrap;flex:1;justify-content:center">
-      ${scored.map((t,i)=>`<div style="text-align:center">
-        <div style="font-size:22px">${medals[i]}</div>
-        <div style="font-size:11px;opacity:.7">${ranks[i]}</div>
-        <div style="font-weight:700;font-size:13px">${esc(t.p.name)}</div>
-        <div style="font-size:11px;color:var(--gold-2)">${n1(t.score)}٪</div>
-      </div>`).join('')}
-    </div>
-  </div>`;
-}
-
-
-function swapFollower(pid){
-  const p = S.people.find(x=>x.id===pid);
-  if(!p) return;
-  const followers = S.people.filter(x=>x.active&&x.section===curSec()&&x.role.startsWith('متابع')&&x.id!==pid);
-  const opts = followers.map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join('');
-  openMod('تبديل المتابع', `<div class="mod-body"><p style="margin:0 0 12px;font-size:13px">استبدال <b>${esc(p.name)}</b> بمتابع آخر:</p>
-    <div class="fld"><label>اختر المتابع البديل</label><select id="swap-sel">${opts}</select></div></div>
-    <div class="mod-foot"><button class="btn g" onclick="confirmSwap(${pid})">تأكيد</button>
-    <button class="btn o" onclick="closeMod()">إلغاء</button></div>`);
-}
-function confirmSwap(oldPid){
-  const newPid = +document.getElementById('swap-sel').value;
-  if(!newPid||newPid===oldPid) return say('اختر متابعاً مختلفاً.');
-  const oldP=S.people.find(x=>x.id===oldPid), newP=S.people.find(x=>x.id===newPid);
-  if(!oldP||!newP) return;
-  let moved=0;
-  S.students.forEach(s=>{if(s.fid===oldPid){s.fid=newPid;moved++;}});
-  S.circles.forEach(c=>{if(c.fid===oldPid)c.fid=newPid;});
-  if(!S.swapLog)S.swapLog=[];
-  S.swapLog.push({from:oldP.name,to:newP.name,date:new Date().toISOString(),students:moved});
-  save();closeMod();flash(`تم استبدال ${oldP.name} بـ ${newP.name} (${moved} طالب).`,'ok');render();
-}
-
-
-function pSuggestions(){
-  const myId = me()?.id;
-  const isAdmin = isMgr();
-  const sug = S.suggestions||[];
-  if(ui.sugForm){
-    return `<div class="card"><h2>تقديم طلب</h2><div class="pad" style="display:flex;flex-direction:column;gap:14px">
-      <div class="fld"><label>نوع الطلب</label><select id="sug-type">
-        <option value="suggestion">مقترح</option><option value="complaint">شكوى</option></select></div>
-      <div class="fld"><label>العنوان</label><input id="sug-title" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
-      <div class="fld"><label>التفاصيل</label><textarea id="sug-body" rows="5" style="width:100%;resize:vertical" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></textarea></div>
-      <div class="row"><button class="btn g" onclick="submitSuggestion()">إرسال</button>
-      <button class="btn o" onclick="ui.sugForm=false;render()">إلغاء</button></div>
-    </div></div>`;
-  }
-  const list = isAdmin ? sug : sug.filter(s=>s.uid===myId);
-  const statusLabel={new:'جديد',processing:'قيد المعالجة',closed:'مغلق'};
-  return `<div class="card"><h2>الاقتراحات والشكاوى<span class="cnt">${list.length}</span>
-    <button class="btn g sm" style="margin-right:auto" onclick="ui.sugForm=true;render()">+ تقديم طلب</button></h2>
-    ${!list.length?'<div class="none">لا توجد طلبات.</div>':
-    `<div class="tw"><table class="d"><thead><tr><th>م</th><th>النوع</th><th>العنوان</th><th>مقدم الطلب</th><th>التاريخ</th><th>الحالة</th>
-    ${isAdmin?'<th>إجراء</th>':''}</tr></thead><tbody>
-    ${list.map((s,i)=>`<tr>
-      <td>${i+1}</td>
-      <td><span class="tag ${s.type==='complaint'?'dz':'g'}">${s.type==='complaint'?'شكوى':'مقترح'}</span></td>
-      <td class="nm">${esc(s.title||'')}</td><td>${esc(s.userName||'—')}</td>
-      <td style="font-size:11px">${(s.date||'').slice(0,10)}</td>
-      <td><b style="font-size:12px">${statusLabel[s.status]||s.status||'جديد'}</b></td>
-      ${isAdmin?`<td><select onchange="updateSugStatus(${s.id},this.value)" style="font-size:12px;border:1px solid var(--line);border-radius:6px;padding:3px 6px">
-        <option value="new" ${s.status==='new'?'selected':''}>جديد</option>
-        <option value="processing" ${s.status==='processing'?'selected':''}>قيد المعالجة</option>
-        <option value="closed" ${s.status==='closed'?'selected':''}>مغلق</option>
-      </select></td>`:''}
-    </tr>`).join('')}</tbody></table></div>`}
-  </div>`;
-}
-function submitSuggestion(){
-  const title=document.getElementById('sug-title')?.value?.trim();
-  const body=document.getElementById('sug-body')?.value?.trim();
-  const type=document.getElementById('sug-type')?.value||'suggestion';
-  if(!title)return say('أدخل عنوان الطلب.');
-  if(!S.suggestions)S.suggestions=[];
-  S.suggestions.push({id:Date.now(),type,title,body,uid:me()?.id,userName:me()?.name||'',date:new Date().toISOString(),status:'new'});
-  save();ui.sugForm=false;flash('تم إرسال طلبك.','ok');render();
-}
-function updateSugStatus(id,status){
-  const s=(S.suggestions||[]).find(x=>x.id===id);
-  if(s){s.status=status;save();render();}
-}
-
-
-function pRanking(){
-  if(!isMgr()) return '<div class="card"><div class="none">للمدير فقط.</div></div>';
-  const followers = S.people.filter(p=>p.active&&p.section===curSec()&&p.role.startsWith('متابع'));
-  const ranked = followers.map(p=>{
-    const rows = reportRows(WEEK, p.id);
-    const done = rows.filter(r=>r.done);
-    const score = done.length ? done.reduce((a,r)=>a+r.pct,0)/done.length : 0;
-    return {p, score};
-  }).sort((a,b)=>b.score-a.score);
-  const medals=['🥇','🥈','🥉'];
-  return `<div class="card"><h2>التقييم والترتيب</h2>
-    ${!ranked.length?'<div class="none">لا توجد بيانات.</div>':
-    `<div class="tw"><table class="d"><thead><tr><th>المركز</th><th>المتابع</th><th>الطلاب</th><th>النسبة</th></tr></thead><tbody>
-    ${ranked.map((r,i)=>`<tr style="${i<3?'background:var(--gold-3)':''}">
-      <td style="font-size:18px;text-align:center">${i<3?medals[i]:i+1}</td>
-      <td class="nm">${esc(r.p.name)}</td>
-      <td>${S.students.filter(s=>s.status==='active'&&s.fid===r.p.id).length}</td>
-      <td><b style="color:${r.score>80?'var(--ok)':r.score>50?'var(--gold)':'var(--warn,#e65100)'}">${r.score?n1(r.score)+'٪':'—'}</b></td>
-    </tr>`).join('')}
-    </tbody></table></div>`}
-  </div>`;
-}
-
-
-function pAllHourly(){
-  if(!isMgr()) return '<div class="card"><div class="none">للمدير فقط.</div></div>';
-  const followers = S.people.filter(p=>p.active&&p.section===curSec()&&p.role.startsWith('متابع'));
-  return weekBar('allhourly') + (followers.length ? followers.map(f=>{
-    const rows = reportRows(WEEK, f.id);
-    if(!rows.length) return '';
-    const late=[], abs=[], plan=[];
-    rows.forEach(r=>{
-      const fl=S.flags?.[WEEK]?.[r.s.id]||{};
-      if(r.q.l||fl.send) late.push(r.s.name);
-      if(r.q.a||fl.abs) abs.push(r.s.name);
-      if(r.sh.days||fl.plan||(r.plan!==null&&r.plan!==''&&+r.plan<r.quota)) plan.push(r.s.name);
-    });
-    const disc = rows.length ? Math.max(0,100-((late.length/rows.length)*20+(abs.length/rows.length)*40+(plan.length/rows.length)*40)) : null;
-    const open = ui.openFollower===f.id;
-    return `<div class="card" style="margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;background:var(--navy);color:#fff;border-radius:${open?'10px 10px 0 0':'10px'}" onclick="ui.openFollower=${open?'null':f.id};render()">
-        <span style="font-weight:700;flex:1">${esc(f.name)}</span>
-        <span style="font-size:12px;opacity:.7">${rows.length} طالب</span>
-        <span style="background:var(--gold);color:#fff;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">${disc===null?'—':n1(disc)+'٪'}</span>
-        <div style="display:flex;gap:10px;font-size:12px"><span>⚠️${late.length}</span><span>❌${abs.length}</span><span>📉${plan.length}</span></div>
-        <span>${open?'▲':'▼'}</span>
-      </div>
-      ${open?`<div style="padding:14px 16px"><div class="tw"><table class="d"><thead><tr><th>البند</th><th>العدد</th><th>الأسماء</th></tr></thead><tbody>
-        <tr><td>المعتذرون</td><td><b>${late.length}</b></td><td style="font-size:12px;color:var(--muted)">${late.length?esc(late.join('، ')):'—'}</td></tr>
-        <tr><td>المتغيبون</td><td><b>${abs.length}</b></td><td style="font-size:12px;color:var(--muted)">${abs.length?esc(abs.join('، ')):'—'}</td></tr>
-        <tr><td>المتعثرون</td><td><b>${plan.length}</b></td><td style="font-size:12px;color:var(--muted)">${plan.length?esc(plan.join('، ')):'—'}</td></tr>
-      </tbody></table></div></div>`:''}
-    </div>`;
-  }).join('') : '<div class="card"><div class="none">لا يوجد متابعون.</div></div>');
-}
-
-
-function pTasks(){
-  const myId = me()?.id;
-  const isAdmin = isMgr();
-  const tasks = Array.isArray(S.tasks) ? S.tasks : [];
-  const today = new Date().toISOString().slice(0,10);
-  const freqLabel={daily:'يومية',weekly:'أسبوعية',monthly:'شهرية',seasonal:'فصلية',yearly:'سنوية',exceptional:'استثنائية'};
-  const freqOrder=['daily','weekly','monthly','seasonal','yearly','exceptional'];
-  if(ui.taskForm&&isAdmin){
-    return `<div class="card"><h2>إضافة مهمة</h2><div class="pad" style="display:flex;flex-direction:column;gap:14px">
-      <div class="fld"><label>العنوان</label><input id="task-title" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
-      <div class="fld"><label>الوصف</label><textarea id="task-desc" rows="3" style="width:100%;resize:vertical" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></textarea></div>
-      <div class="fld"><label>التكرار</label><select id="task-freq">
-        ${freqOrder.map(f=>`<option value="${f}">${freqLabel[f]}</option>`).join('')}</select></div>
-      <div class="fld"><label>الدرجة</label><input id="task-score" type="number" min="0" max="10" value="1" style="width:100px"></div>
-      <div class="row"><button class="btn g" onclick="submitTask()">حفظ</button>
-      <button class="btn o" onclick="ui.taskForm=false;render()">إلغاء</button></div>
-    </div></div>`;
-  }
-  const grouped={};
-  freqOrder.forEach(f=>{grouped[f]=tasks.filter(t=>t.freq===f);});
-  return `<div class="card"><h2>مهامي ومسؤولياتي
-    ${isAdmin?`<button class="btn g sm" style="margin-right:auto" onclick="ui.taskForm=true;render()">+ إضافة مهمة</button>`:''}
-  </h2>
-    ${freqOrder.filter(f=>grouped[f].length).map(f=>`
-      <div style="margin:0 0 4px"><div style="background:var(--navy);color:#fff;padding:9px 16px;font-weight:700;font-size:13px">
-        ${freqLabel[f]} — ${grouped[f].length} مهام
-        <span style="float:left;font-size:12px;opacity:.7">${grouped[f].filter(t=>(S.taskDone||{})[myId+'_'+t.id+'_'+today]).length}/${grouped[f].length} مكتملة</span>
-      </div>
-      ${grouped[f].map(t=>{
-        const doneKey=myId+'_'+t.id+'_'+today;
-        const done=!!(S.taskDone||{})[doneKey];
-        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);background:${done?'var(--cream)':'var(--white)'}">
-          <input type="checkbox" ${done?'checked':''} onchange="toggleTask('${doneKey}',this.checked)" style="width:18px;height:18px;cursor:pointer">
-          <div style="flex:1"><div style="font-weight:${done?'400':'600'};text-decoration:${done?'line-through':'none'};color:${done?'var(--muted)':'var(--ink)'}">${esc(t.title)}</div>
-          ${t.desc?`<div style="font-size:12px;color:var(--muted)">${esc(t.desc)}</div>`:''}</div>
-          <span style="font-size:11px;color:var(--gold);font-weight:600">${t.score||1} درجة</span>
-          ${isAdmin?`<button class="btn dz sm" onclick="deleteTask(${t.id})">حذف</button>`:''}
-        </div>`;
-      }).join('')}
-      </div>`).join('')}
-    ${!tasks.length?'<div class="none">لا توجد مهام.</div>':''}
-  </div>`;
-}
-function submitTask(){
-  const title=document.getElementById('task-title')?.value?.trim();
-  const desc=document.getElementById('task-desc')?.value?.trim();
-  const freq=document.getElementById('task-freq')?.value;
-  const score=+document.getElementById('task-score')?.value||1;
-  if(!title)return say('أدخل عنوان المهمة.');
-  if(!Array.isArray(S.tasks))S.tasks=[];
-  S.tasks.push({id:Date.now(),title,desc,freq,score});
-  save();ui.taskForm=false;flash('تمت إضافة المهمة.','ok');render();
-}
-function toggleTask(key,done){
-  if(!S.taskDone)S.taskDone={};
-  if(done)S.taskDone[key]=1;else delete S.taskDone[key];
-  save();
-}
-function deleteTask(id){
-  if(!confirm('حذف المهمة؟'))return;
-  S.tasks=(S.tasks||[]).filter(t=>t.id!==id);
-  save();render();
-}
-
-
-function pStats(){
-  if(!isMgr()) return '<div class="card"><div class="none">للمدير فقط.</div></div>';
-  const sec = curSec();
-  const active = S.students.filter(s=>s.section===sec&&s.status==='active');
-  const deleted = S.students.filter(s=>s.section===sec&&s.status==='deleted');
-  const circles = S.circles.filter(c=>c.section===sec&&c.active!==false);
-  const followers = S.people.filter(p=>p.active&&p.section===sec&&p.role.startsWith('متابع'));
-  const teachers = S.people.filter(p=>p.active&&p.section===sec&&p.role.startsWith('معلم'));
-  function stat(l,v,s,c){return `<div class="stat"><div class="l">${l}</div><div class="v" style="color:${c||'var(--gold)'}"><b>${v}</b></div>${s?`<div style="font-size:11px;color:var(--muted)">${s}</div>`:''}`;}
-  return `<div class="card"><h2>الإحصاءات الشاملة</h2>
-    <div class="stats">
-      ${stat('إجمالي الطلاب',active.length,'نشط','var(--navy)')}
-      ${stat('الحلقات',circles.length,'','var(--navy)')}
-      ${stat('المتابعون',followers.length,'','var(--gold)')}
-      ${stat('المعلمون',teachers.length,'','var(--gold)')}
-      ${stat('المحذوفون',deleted.length,'إجمالي','var(--muted)')}
-    </div>
-    <div style="padding:16px"><h3 style="font-size:14px;font-weight:700;margin:0 0 12px">توزيع الطلاب حسب المتابع</h3>
-    <div class="tw"><table class="d"><thead><tr><th>المتابع</th><th>الطلاب</th></tr></thead><tbody>
-    ${followers.map(f=>`<tr><td class="nm">${esc(f.name)}</td>
-      <td>${active.filter(s=>s.fid===f.id).length}</td></tr>`).join('')}
-    </tbody></table></div></div>
-  </div>`;
-}
-
 function render(){
   if(!SESSION){ $('app').innerHTML = loginView(); return; }
   /* حفظ التركيز والموضع قبل الرسم */
@@ -3577,7 +3325,7 @@ function render(){
   const _selEnd   = _focused && typeof _focused.selectionEnd   === 'number' ? _focused.selectionEnd   : null;
   const P = PAGES();
   if(!P[PAGE] || !P[PAGE][1]) PAGE='home';
-  const body = ({home:pHome,suggestions:pSuggestions,ranking:pRanking,allhourly:pAllHourly,tasks:pTasks,stats:pStats,staffdata:pStaffData,activity:pActivity,people:pPeople,students:pStudents,circles:pCircles,weekly:pWeekly,
+  const body = ({home:pHome,staffdata:pStaffData,activity:pActivity,people:pPeople,students:pStudents,circles:pCircles,weekly:pWeekly,
     report:pWeekReport,top:pTop,hourly:pHourly,actions:pActions,
     evalp:pEval,race:pRace,dist:pDist,trash:pTrash,users:pUsers,audit:pAudit})[PAGE]();
   const msgs = FLASH.map(([k,m])=>`<div class="msg ${k}">${esc(m)}</div>`).join(''); FLASH=[];
