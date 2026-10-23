@@ -3506,6 +3506,15 @@ function pTasks(){
   return `<div class="card"><h2>مهامي ومسؤولياتي
     ${isAdmin?`<button class="btn g sm" style="margin-right:auto" onclick="ui.taskForm=true;render()">+ إضافة مهمة</button>`:''}
   </h2>
+    ${'Notification' in window && Notification.permission !== 'granted' ? 
+      `<div class="pad" style="background:#fff3e0;border-bottom:1px solid #ffcc80;display:flex;align-items:center;gap:12px">
+        <span style="font-size:13px">🔔 فعّل الإشعارات لتصلك تذكيرات بمواعيد المهام</span>
+        <button class="btn g sm" onclick="requestNotifPermission();render()">تفعيل الإشعارات</button>
+      </div>` : 
+      Notification.permission === 'granted' ? 
+      `<div class="pad" style="background:#e8f5e9;border-bottom:1px solid #a5d6a7;font-size:12px;color:var(--ok)">
+        ✅ الإشعارات مفعّلة — ستصلك تذكيرات يومياً الساعة 1 ظهراً، أسبوعياً يوم السبت، وشهرياً في آخر يوم من الشهر
+      </div>` : ''}
     ${freqOrder.filter(f=>grouped[f].length).map(f=>`
       <div style="margin:0 0 4px"><div style="background:var(--navy);color:#fff;padding:9px 16px;font-weight:700;font-size:13px">
         ${freqLabel[f]} — ${grouped[f].length} مهام
@@ -3545,6 +3554,66 @@ function toggleTask(key,done){
   if(done)S.taskDone[key]=1;else delete S.taskDone[key];
   save();
 }
+
+/* نظام الإشعارات للمهام */
+function requestNotifPermission(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
+}
+
+function sendNotif(title, body){
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'granted'){
+    new Notification(title, {body, icon: '/favicon.ico', dir:'rtl', lang:'ar'});
+  }
+}
+
+function checkTaskNotifs(){
+  const now = new Date();
+  const h = now.getHours(), m = now.getMinutes();
+  const day = now.getDay(); // 6=السبت
+  const dayOfMonth = now.getDate();
+  const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const today = now.toISOString().slice(0,10);
+  const myId = me()?.id;
+  if(!myId) return;
+  
+  const tasks = Array.isArray(S.tasks) ? S.tasks : [];
+  const taskDone = S.taskDone || {};
+  
+  // يومية: الساعة 1 ظهراً (13:00)
+  if(h===13 && m===0){
+    const pending = tasks.filter(t=>t.freq==='daily' && !taskDone[myId+'_'+t.id+'_'+today]);
+    if(pending.length > 0){
+      sendNotif('⏰ مهامك اليومية', `لديك ${pending.length} مهمة يومية لم تُنجز بعد`);
+    }
+  }
+  
+  // أسبوعية: يوم السبت الساعة 1 ظهراً
+  if(day===6 && h===13 && m===0){
+    const pending = tasks.filter(t=>t.freq==='weekly' && !taskDone[myId+'_'+t.id+'_'+today]);
+    if(pending.length > 0){
+      sendNotif('📅 مهامك الأسبوعية', `يوم السبت — لديك ${pending.length} مهمة أسبوعية`);
+    }
+  }
+  
+  // شهرية: آخر يوم من الشهر الساعة 1 ظهراً
+  if(dayOfMonth===lastDay && h===13 && m===0){
+    const pending = tasks.filter(t=>t.freq==='monthly' && !taskDone[myId+'_'+t.id+'_'+today]);
+    if(pending.length > 0){
+      sendNotif('📆 مهامك الشهرية', `آخر يوم من الشهر — لديك ${pending.length} مهمة شهرية`);
+    }
+  }
+}
+
+// تشغيل فحص الإشعارات كل دقيقة
+if(!window._notifInterval){
+  window._notifInterval = setInterval(checkTaskNotifs, 60000);
+  requestNotifPermission();
+}
+
 function deleteTask(id){
   if(!confirm('حذف المهمة؟'))return;
   S.tasks=(S.tasks||[]).filter(t=>t.id!==id);
