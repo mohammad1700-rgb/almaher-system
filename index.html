@@ -3490,12 +3490,12 @@ function pAllHourly(){
   const myRole=me()?.role||'';
   const myName=me()?.name||'';
   const isSuper=isMgr()||myRole==='branch_sup'||myRole==='women_sup'||myName.includes('نورة السيف');
-  const myPid=myPid();
+  const _myPid=myPid();
   // المتابع يرى تقرير مجموعته فقط
   if(!isSuper){
-    const myFol=S.people.find(p=>p.id===myPid);
+    const myFol=S.people.find(p=>p.id===_myPid);
     if(!myFol) return '<div class="card"><div class="none">لا توجد مجموعة.</div></div>';
-    const rows=reportRows(WEEK,myPid);
+    const rows=reportRows(WEEK,_myPid);
     if(!rows.length) return weekBar('allhourly')+'<div class="card"><div class="none">لا توجد بيانات لهذا الأسبوع.</div></div>';
     const late=[],portal=[],abs=[],plan=[];
     rows.forEach(r=>{
@@ -3505,9 +3505,9 @@ function pAllHourly(){
       if(r.q.a||fl.abs)abs.push(r.s.name);
       if(r.sh.days||fl.plan||(r.plan!==null&&r.plan!==''&&+r.plan<r.quota))plan.push(r.s.name);
     });
-    const ontime=calcOnTimeScore(WEEK,myPid);
+    const ontime=calcOnTimeScore(WEEK,_myPid);
     const disc=Math.max(0,100-(late.length/rows.length)*10-(portal.length/rows.length)*10-(abs.length/rows.length)*30-(plan.length/rows.length)*30-(20-ontime));
-    const ap=S.approvals?.[WEEK]?.[myPid];
+    const ap=S.approvals?.[WEEK]?.[_myPid];
     return weekBar('allhourly')
       +'<div class="card"><h2>تقرير الساعة الأسبوعية — '+esc(myFol.name)+'</h2>'
       +'<div class="pad" style="background:var(--cream);border-bottom:1px solid var(--gold-2)">'+
@@ -3521,7 +3521,7 @@ function pAllHourly(){
       +'<div><div style="font-size:11px;color:var(--muted)">التوقيت</div><b style="color:var(--ok)">'+ontime+'٪</b></div>'
       +'</div></div>'
       +(ap?'<div class="pad" style="background:#e8f5e9;color:#2e7d32;font-weight:600">✅ تم اعتماد التقرير</div>'
-        :'<div class="pad"><button class="btn g" onclick="doApprove('+myPid+',reportRows(WEEK,'+myPid+'),null)">اعتماد التقرير</button></div>')
+        :'<div class="pad"><button class="btn g" onclick="doApprove('+_myPid+',reportRows(WEEK,'+_myPid+'),null)">اعتماد التقرير</button></div>')
       +'</div>';
   }
   
