@@ -1455,84 +1455,109 @@ function curFid(){ const f=followersIn(); if(!f.length) return null;
   return ui.fid; }
 
 function pWeekly(){
-  const fid = curFid();
+  const fid=curFid();
   if(!fid) return weekBar('weekly')+'<div class="card"><div class="none">لا توجد مجموعة.</div></div>';
-  const rows = reportRows(WEEK,fid);
-  const days = ui.day==null ? [0,1,2,3,4,5,6] : [ui.day];
-  let pts=0,grd=0,ok=0,urg=0,exc=0,blank=0,pend=0;
-  rows.forEach(r=>{ pts+=r.q.pts; grd+=r.q.graded; blank+=r.q.empty; exc+=r.q.eo+r.q.ep; pend+=r.q.ep;
-    const [k]=statusOf(r.q); if(k==='1')ok++; if(k==='4')urg++; });
+  const rows=reportRows(WEEK,fid);
+  if(!rows.length) return weekBar('weekly')+'<div class="card"><div class="none">لا يوجد طلاب في مجموعتك.</div></div>';
 
-  const chips = `<div class="card noprint"><div class="pad"><div class="row">
-    <span style="font-size:11.5px;font-weight:700;color:var(--muted)">العرض</span>
-    <button class="btn ${ui.day==null?'':'o'} sm" onclick="ui.day=null;render()">الأسبوع كاملا</button>
-    ${DAYS.map((x,i)=>`<button class="btn ${ui.day===i?'':'o'} sm" onclick="ui.day=${i};render()">${x}</button>`).join('')}
-    <div class="sp"></div><button class="btn o sm" onclick="bulkOpen()">رصد جماعي</button>
-    ${isMgr()||can('teacher.edit')?`<button class="btn ${isPausedWeek(WEEK)?'g':'dz'} sm" onclick="togglePauseWeek(WEEK)">${isPausedWeek(WEEK)?'▶ استئناف الحفظ':'⏸ إيقاف الحفظ مؤقتاً'}</button>`:''}
-  </div></div></div>`;
+  // أيام الأسبوع
+  const DAY_NAMES=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const now=new Date();
+  const weekStart=new Date(now); weekStart.setDate(now.getDate()-now.getDay());
+  const days=Array.from({length:7},(_,i)=>{
+    const d=new Date(weekStart); d.setDate(weekStart.getDate()+i);
+    return {label:DAY_NAMES[i]+' '+d.getDate()+'/'+(d.getMonth()+1), date:d.toISOString().slice(0,10), dayIdx:i};
+  });
+  const today=now.toISOString().slice(0,10);
 
-  const pauseBanner = isPausedWeek(WEEK) ? '<div class="msg warn" style="margin:0 0 12px">⏸ الحفظ موقوف مؤقتاً لهذا الأسبوع — لا يُحتسب على الطلاب غياب في خانة الحفظ.</div>' : '';
-  return weekBar('weekly') + chips + pauseBanner + `<div class="stats">
-    ${stat('إجمالي الطلاب', rows.length)}
-    ${stat('نسبة الالتزام والإنجاز', grd?n1(pts/grd*100)+'٪':'—', true)}
-    ${stat('الملتزمون', ok)}${stat('متابعة عاجلة', urg)}${stat('المعتذرون', exc)}
-    ${stat('خانات غير مرصودة', blank+`<small> من ${rows.length*14}</small>`)}</div>
-   ${pend?`<div class="msg warn">يوجد <b>${pend}</b> اعتذارا لم يُعتمد بعد، وهو محسوب في التقييم — اضغط على الخانة الزرقاء واعتمده.</div>`:''}
-   <div class="card"><div class="tw">
-   ${!rows.length?'<div class="none">لا يوجد طلاب تحت هذا المتابع. أضفهم من صفحة الطلاب.</div>':
-   `<table class="d wk" style="min-width:${640+days.length*74}px"><thead><tr>
-     <th style="width:38px">م</th><th style="min-width:150px">اسم الطالب</th><th>التنفيذ</th>
-     ${days.map(i=>`<th>${DAYS[i]}<span style="display:block;font-size:10px;color:#B9B5CE;font-weight:400">${gfmt(wday(WEEK,i))}</span></th>`).join('')}
-     <th>المجموع</th><th style="min-width:118px">تعثّر يدوي</th><th style="min-width:110px">نسبة الالتزام</th><th>الحالة العامة</th></tr></thead><tbody>
-   ${rows.map((r,n)=>{ const sid=r.s.id, pc=commitPct(r.q), [k,lbl,cls]=statusOf(r.q);
-     const LBL = {g:'المراجعة', p:'الربط', k:(r.s.track==='التثبيت'?'التثبيت':'الحفظ')+' — الخطة'};
-     const CLR = {g:'var(--navy)', p:'var(--gold)', k:'var(--ok)'};
-     return ['g','p','k'].map(t=>{ const first=t==='g';
-      return `<tr data-sid="${sid}"${t==='k'?' class="prow"':''}>
-       ${first?`<td class="n" rowspan="3">${n+1}</td><td class="nm" rowspan="3">${esc(r.s.name)}</td>`:''}
-       <td style="font-size:11.5px;font-weight:700;white-space:nowrap;color:${CLR[t]}">${LBL[t]}</td>
-       ${days.map(d=>{ if(t==='k'&&isPausedWeek(WEEK)) return '<td class="c0 off"><span class="rest" style="color:var(--gold)">موقوف</span></td>'; if(t==='k'&&d===OFFDAY) return '<td class="c0 off"><span class="rest">إجازة</span></td>';
-         const m=mark(WEEK,sid,t,d); const pe=m?.s==='e'&&!m.ok;
-         return `<td class="c0"><button class="cell" data-sid="${sid}" data-t="${t}" data-d="${d}"
-           ${m?.s?`data-s="${m.s}"`:''} onclick="cellClick(this,event)" oncontextmenu="cellMenu(this,event);return false"
-           title="${m?.s?ST[m.s]+(pe?' — ينتظر الاعتماد':''):'غير مرصود'}">${m?.s?ST[m.s]:'<span class="add">+</span>'}${pe?'<span class="pend"></span>':''}</button></td>`;}).join('')}
-       <td class="sum-${t}" style="font-weight:700;color:var(--navy)">${t==='k'
-         ? (planPages(WEEK,sid)===null?'—':`${planPages(WEEK,sid)}<div class="sub">من ${wkQ(r.s.track)} ${wkQ(r.s.track)<=10?'أوجه':'وجها'}</div>`)
-         : n2(trackSum(WEEK,sid,t))}</td>
-       ${first?`<td rowspan="3" class="noprint flagcell">
-         <div class="flagbox">
-         ${FLAG_MAN.map(k=>`<button class="btn ${flagOf(WEEK,sid,k)?'':'o'} sm"
-            onclick="markFlag(${sid},'${k}')">${FLAGS[k]}</button>`).join('')}
-         <div class="fsep">مخالفات اللائحة</div>
-         ${FLAG_SANC.map(k=>`<button class="btn ${flagOf(WEEK,sid,k)?'dz':'o'} sm"
-            onclick="markFlag(${sid},'${k}')"
-            title="${esc(FLAG_SANCT[k].c)} — حده ${SANCTIONS[FLAG_SANCT[k].c]}">${FLAGS[k]}</button>`).join('')}
-         </div></td>
-        <td class="pc" rowspan="3">${pc===null?'<span style="color:var(--muted)">—</span>':`<b>${n1(pc)}٪</b>${bar(pc)}`}</td>
-         <td class="stc" rowspan="3"><span class="tag ${cls}">${lbl}</span></td>`:''}
-      </tr>`;}).join('');}).join('')}
-   </tbody></table>`}</div></div>`;
+  // رأس الجدول
+  let html=weekBar('weekly')+'<div class="card"><h2>جدول المتابعة اليومي</h2>'
+    +'<div class="tw" style="overflow-x:auto"><table class="d" style="min-width:700px"><thead><tr>'
+    +'<th style="text-align:right;min-width:140px">الطالب</th>';
+
+  days.forEach(d=>{
+    const isToday=d.date===today;
+    html+='<th style="text-align:center;font-size:11px;'+(isToday?'background:var(--gold-3);':'')+'min-width:90px">'
+      +d.label+'</th>';
+  });
+  html+='<th>الخطة</th></tr></thead><tbody>';
+
+  // صفوف الطلاب
+  rows.forEach(r=>{
+    const sid=r.s.id;
+    const fl=S.flags?.[WEEK]?.[sid]||{};
+    // أيام التسميع للحلقة
+    const circle=S.circles.find(c=>c.id===r.s.cid);
+    const circleDays=circle?.days||'';
+
+    html+='<tr><td style="font-weight:600;white-space:nowrap">'+esc(r.s.name)+'</td>';
+
+    days.forEach(d=>{
+      const isToday=d.date===today;
+      const isTasmee=circleDays==='يوميا'||circleDays.includes(DAY_NAMES[d.dayIdx]);
+      const dayKey=d.date;
+
+      // قراءة الإدخالات
+      const portal=!!(fl['portal_'+dayKey]);
+      const ws=!!(fl['ws_'+dayKey]);
+      const abs=isTasmee&&!!(fl['abs_'+dayKey]);
+
+      const bg=isToday?'background:var(--gold-3);':'';
+      html+='<td style="'+bg+'padding:4px;vertical-align:top">';
+
+      // بوابة
+      html+='<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px">'
+        +'<button onclick="toggleDayFlag('+sid+','portal_'+dayKey+'')" '
+        +'style="font-size:10px;padding:2px 5px;border:1px solid var(--line);border-radius:4px;cursor:pointer;background:'+(portal?'#c62828':'#fff')+';color:'+(portal?'#fff':'var(--ink)')+'">'
+        +(portal?'بوابة ✓':'بوابة')+'</button></div>';
+
+      // واتساب
+      html+='<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px">'
+        +'<button onclick="toggleDayFlag('+sid+','ws_'+dayKey+'')" '
+        +'style="font-size:10px;padding:2px 5px;border:1px solid var(--line);border-radius:4px;cursor:pointer;background:'+(ws?'#e65100':'#fff')+';color:'+(ws?'#fff':'var(--ink)')+'">'
+        +(ws?'واتساب ✓':'واتساب')+'</button></div>';
+
+      // غياب - فقط في أيام التسميع
+      if(isTasmee){
+        html+='<div>'
+          +'<button onclick="toggleDayFlag('+sid+','abs_'+dayKey+'')" '
+          +'style="font-size:10px;padding:2px 5px;border:1px solid var(--line);border-radius:4px;cursor:pointer;background:'+(abs?'#1565c0':'#fff')+';color:'+(abs?'#fff':'var(--ink)')+'">'
+          +(abs?'غياب ✓':'غياب')+'</button></div>';
+      }
+
+      html+='</td>';
+    });
+
+    // تعثر الخطة (تلقائي)
+    const planFlag=!!(fl['plan_w']);
+    const planDays=Object.keys(fl).filter(k=>k.startsWith('plan_d')).length;
+    html+='<td style="text-align:center;font-size:12px">'
+      +(planDays>0?'<span style="color:#c62828;font-weight:700">'+planDays+' أيام</span>':'<span style="color:var(--ok)">✓</span>')
+      +'</td>';
+
+    html+='</tr>';
+  });
+
+  html+='</tbody></table></div></div>';
+  return html;
 }
 
-/* الرصد */
-let MENU=null, MFOR=null;
-function closeMenu(){ MENU?.remove(); MENU=null; MFOR=null; }
-document.addEventListener('click',e=>{ if(!e.target.closest('.cmenu')) closeMenu(); },true);
-function cellClick(b,e){ if(b.dataset.s) cellMenu(b,e); else setCell(b,'c'); }
-function cellMenu(b,e){
-  e.preventDefault(); closeMenu(); MFOR=b; b.focus();
-  const pend = !!b.querySelector('.pend'), cur = b.dataset.s;
-  const m = document.createElement('div'); m.className='cmenu';
-  m.innerHTML = Object.entries(ST).map(([k,v],i)=>
-    `<button onclick="pick('${k}')"><span style="width:13px;height:13px;border-radius:4px;background:${SCOL[k]}"></span>${v}<kbd>${i+1}</kbd></button>`).join('')
-   + (pend?'<hr><button onclick="okEx()">اعتماد الاعتذار<kbd>e</kbd></button>':'')
-   + (cur?'<hr><button onclick="pick(\'\')" style="color:var(--bad)">مسح الرصد<kbd>Del</kbd></button>':'');
-  document.body.appendChild(m);
-  const r=b.getBoundingClientRect();
-  m.style.top = Math.min(r.bottom+4, innerHeight-m.offsetHeight-8)+'px';
-  m.style.left = Math.max(8, Math.min(r.left, innerWidth-m.offsetWidth-8))+'px';
-  MENU=m;
+function toggleDayFlag(sid,key){
+  const st=S.students.find(x=>x.id===sid);
+  if(!st||!ownsStudent(st)) return say('لا تملك الرصد على هذا الطالب.');
+  if(!S.flags[WEEK]) S.flags[WEEK]={};
+  if(!S.flags[WEEK][sid]) S.flags[WEEK][sid]={};
+  if(S.flags[WEEK][sid][key]){
+    delete S.flags[WEEK][sid][key];
+    delete S.flags[WEEK][sid][key+'_at'];
+  } else {
+    S.flags[WEEK][sid][key]=1;
+    S.flags[WEEK][sid][key+'_at']=Date.now();
+  }
+  save();
+  render();
 }
+
 function pick(v){ const b=MFOR; closeMenu(); if(b) setCell(b,v); }
 function okEx(){ const b=MFOR; closeMenu(); if(!b) return;
   setEx(WEEK, +b.dataset.sid, b.dataset.t, +b.dataset.d); save(); render(); }
