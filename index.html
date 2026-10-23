@@ -766,6 +766,8 @@ const PAGES = () => ({
   ranking:['التقييم والترتيب', isMgr()],
   tasks:['مهامي ومسؤولياتي', true],
   stats:['الإحصاءات الشاملة', isMgr()],
+  teachers:['المعلمون', true],
+  payroll:['المسير المالي', isMgr()],
   people:  ['المتابعون', true],
   students:['الطلاب', true],
   circles: ['الحلقات', true],
@@ -3068,7 +3070,7 @@ function modal(title, body, foot){
 function closeModal(){ $('lay')?.remove(); }
 
 /* ---------------- الهيكل والتوجيه ---------------- */
-let ui = {q:'',sq:'',cq:'',sdq:'',sdRole:'',sdOpen:null,openFollower:null,sugForm:false,sugType:'suggestion',rankTab:'followers',taskForm:false,statPeriod:'weekly',show:'active',day:null,fid:null,sid:null,kind:null,ec:null,pnode:null,atab:'sanc',ttab:'students',rtab:'week',dq:'',t:null};
+let ui = {q:'',sq:'',cq:'',sdq:'',sdRole:'',sdOpen:null,openFollower:null,sugForm:false,sugType:'suggestion',rankTab:'followers',taskForm:false,statPeriod:'weekly',teacherBranch:'all',teacherMode:'all',teacherQ:'',payMonth:'',paySec:'men',payEdit:false,payEditSection:0,show:'active',day:null,fid:null,sid:null,kind:null,ec:null,pnode:null,atab:'sanc',ttab:'students',rtab:'week',dq:'',t:null};
 function go(p,show){
   closeSheet(); PAGE=p;
   if(show) ui.show=show; else if(p==='students') ui.show='active';
@@ -3735,6 +3737,204 @@ function pStats(){
   </div>`;
 }
 
+
+function pTeachers(){
+  const sec = curSec();
+  const branch = ui.teacherBranch||'all';
+  const mode = ui.teacherMode||'all';
+  const q = ui.teacherQ||'';
+  
+  const teachers = S.people.filter(p=>p.active && p.section===sec && p.role.startsWith('معلم'));
+  
+  // استخراج الفروع من بيانات الطاقم
+  const branches = [...new Set(teachers.map(p=>p.branch||p.city||'غير محدد'))].filter(Boolean);
+  
+  let filtered = teachers;
+  if(branch!=='all') filtered = filtered.filter(p=>(p.branch||p.city||'غير محدد')===branch);
+  if(mode==='online') filtered = filtered.filter(p=>(p.workMode||'').includes('بعد'));
+  if(mode==='offline') filtered = filtered.filter(p=>!(p.workMode||'').includes('بعد'));
+  if(q) filtered = filtered.filter(p=>(p.name||'').includes(q));
+  
+  return \`<div class="card"><h2>المعلمون<span class="cnt">\${filtered.length}</span></h2>
+    <div class="pad" style="background:var(--cream);border-bottom:1px solid var(--gold-2);display:flex;flex-direction:column;gap:10px">
+      <div class="row" style="gap:8px;flex-wrap:wrap">
+        <button class="btn \${mode==='all'?'g':'o'} sm" onclick="ui.teacherMode='all';render()">الكل</button>
+        <button class="btn \${mode==='offline'?'g':'o'} sm" onclick="ui.teacherMode='offline';render()">حضوري</button>
+        <button class="btn \${mode==='online'?'g':'o'} sm" onclick="ui.teacherMode='online';render()">عن بُعد</button>
+      </div>
+      <div class="row" style="gap:8px;flex-wrap:wrap">
+        <button class="btn \${branch==='all'?'g':'o'} sm" onclick="ui.teacherBranch='all';render()">جميع الفروع</button>
+        \${branches.map(b=>\`<button class="btn \${branch===b?'g':'o'} sm" onclick="ui.teacherBranch='\${esc(b)}';render()">\${esc(b)}</button>\`).join('')}
+      </div>
+      <div id="teacher-search-wrap"></div>
+    </div>
+    \${!filtered.length?'<div class="none">لا يوجد معلمون.</div>':
+    \`<div class="tw"><table class="d"><thead><tr>
+      <th>م</th><th>الاسم</th><th>الجوال</th><th>الفرع</th><th>آلية العمل</th><th>الطلاب</th>
+    </tr></thead><tbody>
+    \${filtered.map((p,i)=>\`<tr>
+      <td class="n">\${i+1}</td>
+      <td class="nm"><b>\${esc(p.name)}</b></td>
+      <td>\${esc(p.phone||'—')}</td>
+      <td>\${esc(p.branch||p.city||'—')}</td>
+      <td><span class="tag \${(p.workMode||'').includes('بعد')?'r':'g'}">\${esc(p.workMode||'—')}</span></td>
+      <td>\${S.students.filter(s=>s.status==='active'&&s.fid===p.id).length}</td>
+    </tr>\`).join('')}
+    </tbody></table></div>\`}
+  </div>\`;
+}
+
+
+function pPayroll(){
+  if(!isMgr()) return '<div class="card"><div class="none">هذه الصفحة للمدير فقط.</div></div>';
+  
+  const month = ui.payMonth || new Date().toISOString().slice(0,7);
+  const sec = ui.paySec || 'men';
+  const payrolls = S.payrolls || {};
+  const key = month + '_' + sec;
+  let pr = payrolls[key] || {sections: []};
+  
+  const SECTIONS = [
+    'المتابعون والموظفون',
+    'المعلمون - حضوري',
+    'المعلمون - عن بُعد',
+    'مسمعو المرحلة التمهيدية',
+    'المقابلات',
+    'مقرئو السرد الفصلي',
+    'الساعات الإضافية',
+  ];
+
+  if(ui.payEdit){
+    // صفحة التعديل
+    const si = ui.payEditSection;
+    const rows = (pr.sections[si]||{rows:[]}).rows || [];
+    return `<div class="card"><h2>تحرير: ${esc(SECTIONS[si]||'')} — ${month}</h2>
+      <div class="pad">
+        <table class="d" style="min-width:700px"><thead><tr>
+          <th>م</th><th>الاسم</th><th>المسمى</th><th>رقم الهوية</th><th>الآيبان</th>
+          <th>الأيام</th><th>القيمة اليومية</th><th>أيام الحسم</th><th>الصافي</th><th></th>
+        </tr></thead><tbody id="pr-body">
+        ${rows.map((r,i)=>`<tr id="pr-row-${i}">
+          <td>${i+1}</td>
+          <td><input value="${esc(r.name||'')}" onchange="prUpdate(${si},${i},'name',this.value)" style="width:120px" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></td>
+          <td><input value="${esc(r.title||'')}" onchange="prUpdate(${si},${i},'title',this.value)" style="width:100px" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></td>
+          <td><input value="${esc(r.nid||'')}" onchange="prUpdate(${si},${i},'nid',this.value)" style="width:110px" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></td>
+          <td><input value="${esc(r.iban||'')}" onchange="prUpdate(${si},${i},'iban',this.value)" style="width:130px" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></td>
+          <td><input type="number" value="${r.days||0}" onchange="prUpdate(${si},${i},'days',+this.value);prCalc(${si},${i})" style="width:55px"></td>
+          <td><input type="number" value="${r.rate||0}" onchange="prUpdate(${si},${i},'rate',+this.value);prCalc(${si},${i})" style="width:70px"></td>
+          <td><input type="number" value="${r.deduct||0}" onchange="prUpdate(${si},${i},'deduct',+this.value);prCalc(${si},${i})" style="width:55px"></td>
+          <td><b id="pr-net-${i}">${((r.days||0)-(r.deduct||0))*(r.rate||0)}</b></td>
+          <td><button class="btn dz sm" onclick="prDelRow(${si},${i})">×</button></td>
+        </tr>`).join('')}
+        </tbody></table>
+        <div class="row" style="margin-top:10px">
+          <button class="btn g sm" onclick="prAddRow(${si})">+ إضافة سطر</button>
+          <button class="btn o sm" onclick="prAutoFill(${si})">استيراد من النظام</button>
+          <button class="btn g" onclick="ui.payEdit=false;render()" style="margin-right:auto">حفظ وإغلاق</button>
+        </div>
+      </div></div>`;
+  }
+
+  // الصفحة الرئيسية للمسير
+  const totalNet = (pr.sections||[]).reduce((a,s)=>{
+    return a + ((s||{}).rows||[]).reduce((b,r)=>b+((r.days||0)-(r.deduct||0))*(r.rate||0),0);
+  },0);
+
+  return `<div class="card"><h2>المسير المالي الشهري</h2>
+    <div class="pad" style="background:var(--cream);border-bottom:1px solid var(--gold-2)">
+      <div class="row" style="gap:12px;flex-wrap:wrap;align-items:center">
+        <div class="fld" style="margin:0"><label>الشهر</label>
+          <input type="month" value="${month}" onchange="ui.payMonth=this.value;render()" style="border:1.5px solid var(--line);border-radius:8px;padding:6px 10px;font-family:var(--f)"></div>
+        <div class="fld" style="margin:0"><label>القسم</label>
+          <select onchange="ui.paySec=this.value;render()" style="border:1.5px solid var(--line);border-radius:8px;padding:7px 12px;font-family:var(--f)">
+            <option value="men" ${sec==='men'?'selected':''}>الرجال</option>
+            <option value="women" ${sec==='women'?'selected':''}>مشكاة</option>
+          </select></div>
+        <div style="margin-right:auto;text-align:left">
+          <div style="font-size:12px;color:var(--muted)">إجمالي المسير</div>
+          <b style="font-size:20px;color:var(--navy)">${totalNet.toLocaleString()} ريال</b>
+        </div>
+      </div>
+    </div>
+    ${SECTIONS.map((s,i)=>{
+      const rows = (pr.sections[i]||{rows:[]}).rows||[];
+      const secTotal = rows.reduce((a,r)=>a+((r.days||0)-(r.deduct||0))*(r.rate||0),0);
+      return `<div style="border-bottom:1px solid var(--line)">
+        <div style="background:var(--navy);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px">
+          <span style="font-weight:700;flex:1">${s}</span>
+          <span style="font-size:12px;opacity:.75">${rows.length} سجل</span>
+          <span style="font-weight:700">${secTotal.toLocaleString()} ريال</span>
+          <button class="btn o sm" onclick="ui.payEdit=true;ui.payEditSection=${i};render()" style="color:#fff;border-color:rgba(255,255,255,.4)">تحرير</button>
+        </div>
+        ${rows.length?`<div class="tw"><table class="d" style="font-size:12px"><thead><tr>
+          <th>م</th><th>الاسم</th><th>المسمى</th><th>الأيام</th><th>القيمة</th><th>الحسم</th><th>الصافي</th>
+        </tr></thead><tbody>
+        ${rows.map((r,j)=>`<tr>
+          <td>${j+1}</td><td class="nm">${esc(r.name||'')}</td><td>${esc(r.title||'')}</td>
+          <td>${r.days||0}</td><td>${r.rate||0}</td><td>${r.deduct||0}</td>
+          <td><b>${((r.days||0)-(r.deduct||0))*(r.rate||0)}</b></td>
+        </tr>`).join('')}
+        </tbody></table></div>`:''}
+      </div>`;
+    }).join('')}
+    <div class="pad noprint"><button class="btn g" onclick="printPayroll('${key}')">🖨 طباعة المسير</button></div>
+  </div>`;
+}
+
+function prUpdate(si,ri,field,val){
+  if(!S.payrolls) S.payrolls={};
+  const key = (ui.payMonth||'')+`_`+(ui.paySec||'men');
+  if(!S.payrolls[key]) S.payrolls[key]={sections:[]};
+  if(!S.payrolls[key].sections[si]) S.payrolls[key].sections[si]={rows:[]};
+  if(!S.payrolls[key].sections[si].rows[ri]) S.payrolls[key].sections[si].rows[ri]={};
+  S.payrolls[key].sections[si].rows[ri][field]=val;
+  save();
+}
+
+function prCalc(si,ri){
+  const r = (S.payrolls||{})[(ui.payMonth||'')+`_`+(ui.paySec||'men')]?.sections?.[si]?.rows?.[ri]||{};
+  const net = ((r.days||0)-(r.deduct||0))*(r.rate||0);
+  const el = document.getElementById(`pr-net-${ri}`);
+  if(el) el.textContent = net;
+}
+
+function prAddRow(si){
+  prUpdate(si, ((S.payrolls||{})[(ui.payMonth||'')+`_`+(ui.paySec||'men')]?.sections?.[si]?.rows||[]).length, 'name','');
+  render();
+}
+
+function prDelRow(si,ri){
+  const key=(ui.payMonth||'')+`_`+(ui.paySec||'men');
+  if(S.payrolls?.[key]?.sections?.[si]?.rows){
+    S.payrolls[key].sections[si].rows.splice(ri,1);
+    save(); render();
+  }
+}
+
+function prAutoFill(si){
+  const sec=ui.paySec||'men';
+  const people=S.people.filter(p=>p.active&&p.section===sec);
+  let group=[];
+  if(si===0) group=people.filter(p=>p.role.startsWith('متابع'));
+  else if(si===1||si===2) group=people.filter(p=>p.role.startsWith('معلم'));
+  if(!group.length) return say('لا يوجد أشخاص في هذا القسم.');
+  const key=(ui.payMonth||'')+`_`+sec;
+  if(!S.payrolls) S.payrolls={};
+  if(!S.payrolls[key]) S.payrolls[key]={sections:[]};
+  if(!S.payrolls[key].sections[si]) S.payrolls[key].sections[si]={rows:[]};
+  const existing = S.payrolls[key].sections[si].rows.map(r=>r.name);
+  group.forEach(p=>{
+    if(!existing.includes(p.name)){
+      S.payrolls[key].sections[si].rows.push({name:p.name,title:p.role,nid:p.nid||'',iban:'',days:0,rate:0,deduct:0});
+    }
+  });
+  save(); render();
+}
+
+function printPayroll(key){
+  window.print();
+}
+
 function render(){
   if(!SESSION){ $('app').innerHTML = loginView(); return; }
   /* حفظ التركيز والموضع قبل الرسم */
@@ -3744,7 +3944,7 @@ function render(){
   const _selEnd   = _focused && typeof _focused.selectionEnd   === 'number' ? _focused.selectionEnd   : null;
   const P = PAGES();
   if(!P[PAGE] || !P[PAGE][1]) PAGE='home';
-  const body = ({home:pHome,staffdata:pStaffData,activity:pActivity,allhourly:pAllHourly,suggestions:pSuggestions,ranking:pRanking,tasks:pTasks,stats:pStats,people:pPeople,students:pStudents,circles:pCircles,weekly:pWeekly,
+  const body = ({home:pHome,staffdata:pStaffData,activity:pActivity,allhourly:pAllHourly,suggestions:pSuggestions,ranking:pRanking,tasks:pTasks,stats:pStats,teachers:pTeachers,payroll:pPayroll,people:pPeople,students:pStudents,circles:pCircles,weekly:pWeekly,
     report:pWeekReport,top:pTop,hourly:pHourly,actions:pActions,
     evalp:pEval,race:pRace,dist:pDist,trash:pTrash,users:pUsers,audit:pAudit})[PAGE]();
   const msgs = FLASH.map(([k,m])=>`<div class="msg ${k}">${esc(m)}</div>`).join(''); FLASH=[];
