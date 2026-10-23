@@ -3532,9 +3532,9 @@ function pStats(){
   return '<div class="card"><h2>الإحصاءات الشاملة</h2>'
     +'<div class="pad" style="background:var(--cream);border-bottom:1px solid var(--gold-2)">'
     +'<div class="row" style="gap:8px;flex-wrap:wrap">'
-    +['daily','monthly','quarterly','yearly','all'].map(p=>
-      '<button class="btn '+(period===p?'g':'o')+' sm" onclick="ui.statPeriod=''+p+'';render()">'+periodLabels[p]+'</button>'
-    ).join('')
+    +['daily','monthly','quarterly','yearly','all'].map(function(p){
+      return '<button class="btn '+(period===p?'g':'o')+' sm" onclick="ui.statPeriod=\''+p+'\';render()">'+periodLabels[p]+'</button>';
+    }).join('')
     +'<button class="btn '+(editing?'dz':'o')+' sm" style="margin-right:auto" onclick="ui.statsEdit=!ui.statsEdit;render()">'+(editing?'✕ إلغاء':'✏️ تعديل')+'</button>'
     +(editing?'<button class="btn g sm" onclick="saveStats()">💾 حفظ</button>':'')
     +'</div>'
