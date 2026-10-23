@@ -1458,88 +1458,74 @@ function pWeekly(){
   const fid=curFid();
   if(!fid) return weekBar('weekly')+'<div class="card"><div class="none">لا توجد مجموعة.</div></div>';
   const rows=reportRows(WEEK,fid);
-  if(!rows.length) return weekBar('weekly')+'<div class="card"><div class="none">لا يوجد طلاب في مجموعتك.</div></div>';
+  if(!rows.length) return weekBar('weekly')+'<div class="card"><div class="none">لا يوجد طلاب.</div></div>';
 
-  // أيام الأسبوع
   const DAY_NAMES=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
   const now=new Date();
   const weekStart=new Date(now); weekStart.setDate(now.getDate()-now.getDay());
-  const days=Array.from({length:7},(_,i)=>{
+  const days=Array.from({length:7},function(_,i){
     const d=new Date(weekStart); d.setDate(weekStart.getDate()+i);
     return {label:DAY_NAMES[i]+' '+d.getDate()+'/'+(d.getMonth()+1), date:d.toISOString().slice(0,10), dayIdx:i};
   });
   const today=now.toISOString().slice(0,10);
 
-  // رأس الجدول
   let html=weekBar('weekly')+'<div class="card"><h2>جدول المتابعة اليومي</h2>'
     +'<div class="tw" style="overflow-x:auto"><table class="d" style="min-width:700px"><thead><tr>'
     +'<th style="text-align:right;min-width:140px">الطالب</th>';
 
-  days.forEach(d=>{
-    const isToday=d.date===today;
-    html+='<th style="text-align:center;font-size:11px;'+(isToday?'background:var(--gold-3);':'')+'min-width:90px">'
+  days.forEach(function(d){
+    var isToday=d.date===today;
+    html+='<th style="text-align:center;font-size:11px;min-width:90px'+(isToday?';background:var(--gold-3)':'')+'">'
       +d.label+'</th>';
   });
   html+='<th>الخطة</th></tr></thead><tbody>';
 
-  // صفوف الطلاب
-  rows.forEach(r=>{
-    const sid=r.s.id;
-    const fl=S.flags?.[WEEK]?.[sid]||{};
-    // أيام التسميع للحلقة
-    const circle=S.circles.find(c=>c.id===r.s.cid);
-    const circleDays=circle?.days||'';
+  rows.forEach(function(r){
+    var sid=r.s.id;
+    var fl=S.flags&&S.flags[WEEK]&&S.flags[WEEK][sid]?S.flags[WEEK][sid]:{};
+    var circle=S.circles.find(function(c){return c.id===r.s.cid;});
+    var circleDays=circle&&circle.days?circle.days:'';
 
     html+='<tr><td style="font-weight:600;white-space:nowrap">'+esc(r.s.name)+'</td>';
 
-    days.forEach(d=>{
-      const isToday=d.date===today;
-      const isTasmee=circleDays==='يوميا'||circleDays.includes(DAY_NAMES[d.dayIdx]);
-      const dayKey=d.date;
-
-      // قراءة الإدخالات
-      const portal=!!(fl['portal_'+dayKey]);
-      const ws=!!(fl['ws_'+dayKey]);
-      const abs=isTasmee&&!!(fl['abs_'+dayKey]);
-
-      const bg=isToday?'background:var(--gold-3);':'';
+    days.forEach(function(d){
+      var isToday=d.date===today;
+      var isTasmee=circleDays==='يوميا'||circleDays.indexOf(DAY_NAMES[d.dayIdx])>=0;
+      var pk='p:'+sid+':'+d.date;
+      var wk='w:'+sid+':'+d.date;
+      var ak='a:'+sid+':'+d.date;
+      var portal=!!(fl['p_'+d.date]);
+      var ws=!!(fl['w_'+d.date]);
+      var ab=isTasmee&&!!(fl['a_'+d.date]);
+      var bg=isToday?'background:var(--gold-3);':'';
       html+='<td style="'+bg+'padding:4px;vertical-align:top">';
-
-      // بوابة
-      html+='<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px">'
-        +'<button onclick="toggleDayFlag('+sid+','portal_'+dayKey+'')" '
-        +'style="font-size:10px;padding:2px 5px;border:1px solid var(--line);border-radius:4px;cursor:pointer;background:'+(portal?'#c62828':'#fff')+';color:'+(portal?'#fff':'var(--ink)')+'">'
-        +(portal?'بوابة ✓':'بوابة')+'</button></div>';
-
-      // واتساب
-      html+='<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px">'
-        +'<button onclick="toggleDayFlag('+sid+','ws_'+dayKey+'')" '
-        +'style="font-size:10px;padding:2px 5px;border:1px solid var(--line);border-radius:4px;cursor:pointer;background:'+(ws?'#e65100':'#fff')+';color:'+(ws?'#fff':'var(--ink)')+'">'
-        +(ws?'واتساب ✓':'واتساب')+'</button></div>';
-
-      // غياب - فقط في أيام التسميع
-      if(isTasmee){
-        html+='<div>'
-          +'<button onclick="toggleDayFlag('+sid+','abs_'+dayKey+'')" '
-          +'style="font-size:10px;padding:2px 5px;border:1px solid var(--line);border-radius:4px;cursor:pointer;background:'+(abs?'#1565c0':'#fff')+';color:'+(abs?'#fff':'var(--ink)')+'">'
-          +(abs?'غياب ✓':'غياب')+'</button></div>';
-      }
-
+      html+='<div style="margin-bottom:2px"><button onclick="tdf('+sid+','p_'+d.date+'')" style="font-size:10px;padding:2px 5px;border:1px solid var(--line);border-radius:4px;cursor:pointer;background:'+(portal?'#c62828':'#fff')+';color:'+(portal?'#fff':'inherit')+'">'+(portal?'✓ ':'')+'بوابة</button></div>';
+      html+='<div style="margin-bottom:2px"><button onclick="tdf('+sid+','w_'+d.date+'')" style="font-size:10px;padding:2px 5px;border:1px solid var(--line);border-radius:4px;cursor:pointer;background:'+(ws?'#e65100':'#fff')+';color:'+(ws?'#fff':'inherit')+'">'+(ws?'✓ ':'')+'واتساب</button></div>';
+      if(isTasmee) html+='<div><button onclick="tdf('+sid+','a_'+d.date+'')" style="font-size:10px;padding:2px 5px;border:1px solid var(--line);border-radius:4px;cursor:pointer;background:'+(ab?'#1565c0':'#fff')+';color:'+(ab?'#fff':'inherit')+'">'+(ab?'✓ ':'')+'غياب</button></div>';
       html+='</td>';
     });
 
-    // تعثر الخطة (تلقائي)
-    const planFlag=!!(fl['plan_w']);
-    const planDays=Object.keys(fl).filter(k=>k.startsWith('plan_d')).length;
-    html+='<td style="text-align:center;font-size:12px">'
-      +(planDays>0?'<span style="color:#c62828;font-weight:700">'+planDays+' أيام</span>':'<span style="color:var(--ok)">✓</span>')
-      +'</td>';
-
+    var planDays=Object.keys(fl).filter(function(k){return k.startsWith('plan_');}).length;
+    html+='<td style="text-align:center;font-size:12px">'+(planDays>0?'<span style="color:#c62828;font-weight:700">'+planDays+'</span>':'<span style="color:var(--ok)">✓</span>')+'</td>';
     html+='</tr>';
   });
 
   html+='</tbody></table></div></div>';
   return html;
+}
+
+function tdf(sid,key){
+  var st=S.students.find(function(x){return x.id===sid;});
+  if(!st||!ownsStudent(st)) return say('لا تملك الرصد على هذا الطالب.');
+  if(!S.flags[WEEK]) S.flags[WEEK]={};
+  if(!S.flags[WEEK][sid]) S.flags[WEEK][sid]={};
+  if(S.flags[WEEK][sid][key]){
+    delete S.flags[WEEK][sid][key];
+  } else {
+    S.flags[WEEK][sid][key]=1;
+    S.flags[WEEK][sid][key+'_at']=Date.now();
+  }
+  save(); render();
 }
 
 function toggleDayFlag(sid,key){
