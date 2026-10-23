@@ -3669,6 +3669,50 @@ function confirmSwap(oldPid){
   S.swapLog.push({from:oldP.name,to:newP.name,date:new Date().toISOString(),students:moved});
   save();closeMod();flash('تم استبدال '+oldP.name+' بـ '+newP.name+' ('+moved+' طالب).','ok');render();
 }
+
+/* تنبيه إحصاءات نهاية الشهر للمشرفين */
+function checkStatsNotif(){
+  const role = me()?.role;
+  const isSupervisor = role && (role.startsWith('مشرف') || role.startsWith('branch_sup') || role === 'women_sup');
+  if(!isSupervisor && !isMgr()) return;
+  
+  const now = new Date();
+  const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const today = now.getDate();
+  const h = now.getHours();
+  
+  // في آخر 3 أيام من الشهر
+  if(today >= lastDay - 2){
+    const monthKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    const sec = curSec();
+    const hasData = S.statsData?.[sec]?.[monthKey] && Object.keys(S.statsData[sec][monthKey]).length > 0;
+    
+    if(!hasData){
+      // إشعار المتصفح
+      if(Notification.permission === 'granted' && h === 13){
+        new Notification('📊 تذكير: إحصاءات الشهر', {
+          body: 'لم يتم إدخال إحصاءات شهر '+monthKey+' بعد. يرجى الدخول على صفحة الإحصاءات الشاملة.',
+          dir: 'rtl', lang: 'ar'
+        });
+      }
+      // رسالة داخل النظام
+      const shown = sessionStorage.getItem('stats_notif_'+monthKey);
+      if(!shown){
+        sessionStorage.setItem('stats_notif_'+monthKey, '1');
+        setTimeout(()=>{
+          flash('📊 تذكير: لم تُدخل إحصاءات شهر '+monthKey+' — اذهب لصفحة الإحصاءات الشاملة.', 'warn');
+        }, 2000);
+      }
+    }
+  }
+}
+
+// تشغيل الفحص عند الدخول وكل ساعة
+if(!window._statsNotifInit){
+  window._statsNotifInit = true;
+  setTimeout(checkStatsNotif, 3000);
+  setInterval(checkStatsNotif, 3600000);
+}
 function render(){
   if(!SESSION){ $('app').innerHTML = loginView(); return; }
   /* حفظ التركيز والموضع قبل الرسم */
