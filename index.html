@@ -738,6 +738,12 @@ function followersIn(){ const sec=curSec(), r=me().role;
   return l; }
 
 /* ---------------- لوحة البرنامج ---------------- */
+function resetData(){
+  if(confirm('سيتم مسح جميع البيانات المحلية وإعادة تحميل النظام. هل أنت متأكد؟')){
+    localStorage.clear();
+    location.reload();
+  }
+}
 function pHome(){
   const r = me().role, mine = myPid();
   let st;
@@ -899,7 +905,8 @@ function pPeople(){
          oninput="ui.q=this.value;clearTimeout(ui.t);ui.t=setTimeout(render,500);" onkeydown="event.stopImmediatePropagation();if(event.key==='Enter'||event.key==='Return'){clearTimeout(ui.t);render();}" onkeyup="event.stopImmediatePropagation()">
      </div>
       ${q?`<button class="btn o sm" onclick="ui.q='';render()">إلغاء البحث</button>`:''}
-      <button class="btn o sm" onclick="window.print()">طباعة</button></div></div>
+      <button class="btn o sm" onclick="window.print()">طباعة</button>
+      <button class="btn dz sm" onclick="resetData()" title="إعادة تحميل البيانات من المصدر">🔄 تحديث البيانات</button></div></div>
     ${!rows.length?'<div class="none">لا توجد سجلات.</div>':`<div class="tw">
     <table class="d stf" style="min-width:860px"><thead><tr>
       <th style="width:28px">#</th><th>الاسم</th><th>الصفة</th><th>النطاق</th><th>حلقات</th><th>طلاب</th><th>الجوال</th>
