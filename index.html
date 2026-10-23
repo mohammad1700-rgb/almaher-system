@@ -3516,19 +3516,21 @@ function pStats(){
   if(!S.statsData[sec][periodKey])S.statsData[sec][periodKey]={};
   const d=S.statsData[sec][periodKey];
 
-  const fields=[
-    {key:'batches',label:'دفعات التسجيل',icon:'📦'},
-    {key:'applicants',label:'المتقدمون',icon:'📋'},
-    {key:'accepted',label:'المقبولون',icon:'✅'},
-    {key:'preliminary',label:'طلاب المرحلة التمهيدية',icon:'🔰'},
-    {key:'avg_regular',label:'متوسط الطلاب المنتظمين',icon:'📊'},
-    {key:'recited',label:'المسمّعون',icon:'🎤'},
-    {key:'regular',label:'الطلاب المنتظمون',icon:'👥'},
-    {key:'finishers',label:'عدد الخاتمين',icon:'🏆'},
-    {key:'faces_memorized',label:'الأوجه المحفوظة',icon:'📖'},
-    {key:'faces_fixed',label:'الأوجه المثبتة',icon:'📌'},
-    {key:'faces_reviewed',label:'أوجه المراجعة',icon:'🔄'},
+  // الحقول حسب الفترة
+  const allFields=[
+    {key:'batches',label:'دفعات التسجيل',icon:'📦',periods:['all']},
+    {key:'applicants',label:'المتقدمون',icon:'📋',periods:['all']},
+    {key:'accepted',label:'المقبولون',icon:'✅',periods:['all']},
+    {key:'preliminary',label:'طلاب المرحلة التمهيدية',icon:'🔰',periods:['all']},
+    {key:'avg_regular',label:'متوسط الطلاب المنتظمين',icon:'📊',periods:['daily','quarterly','yearly','all']},
+    {key:'recited',label:'المسمّعون',icon:'🎤',periods:['all']},
+    {key:'regular',label:'الطلاب المنتظمون',icon:'👥',periods:['monthly']},
+    {key:'finishers',label:'عدد الخاتمين',icon:'🏆',periods:['all']},
+    {key:'faces_memorized',label:'الأوجه المحفوظة',icon:'📖',periods:['all']},
+    {key:'faces_fixed',label:'الأوجه المثبتة',icon:'📌',periods:['all']},
+    {key:'faces_reviewed',label:'أوجه المراجعة',icon:'🔄',periods:['all']},
   ];
+  const fields=allFields.filter(f=>f.periods.includes('all')||f.periods.includes(period));
 
   const periodLabels={daily:'يومي',monthly:'شهري',quarterly:'ربعي',yearly:'سنوي',all:'منذ البداية'};
 
