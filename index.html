@@ -3324,7 +3324,8 @@ function pActivity(){
 
 function pHonorBoard(){
   const sec = curSec();
-  const followers = S.people.filter(p=>p.active&&p.section===sec&&p.role.startsWith('متابع'));
+  const followers = S.people.filter(p=>p.active&&(p.section===sec||sec==='all')&&p.role.startsWith('متابع'));
+  if(!followers.length) return '';
   let scored = followers.map(p=>{
     const rows = reportRows(WEEK, p.id);
     const done = rows.filter(r=>r.done);
