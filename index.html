@@ -3358,6 +3358,9 @@ function pSuggestions(){
       +'<div class="fld"><label>نوع الطلب</label><select id="sug-type"><option value="suggestion">مقترح</option><option value="complaint">شكوى</option></select></div>'
       +'<div class="fld"><label>العنوان</label><input id="sug-title" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>'
       +'<div class="fld"><label>التفاصيل</label><textarea id="sug-body" rows="5" style="width:100%;resize:vertical" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></textarea></div>'
+      +'<div class="fld"><label>إرفاق صورة (اختياري)</label>'
+      +'<input type="file" id="sug-img" accept="image/*" style="width:100%">'
+      +'<div id="sug-img-preview" style="margin-top:8px"></div></div>'
       +'<div class="row"><button class="btn g" onclick="submitSuggestion()">إرسال</button>'
       +'<button class="btn o" onclick="ui.sugForm=false;render()">إلغاء</button></div></div></div>';
   }
@@ -3370,7 +3373,7 @@ function pSuggestions(){
     +(isAdmin?'<th>إجراء</th>':'')+'</tr></thead><tbody>'
     +list.map((s,i)=>'<tr><td>'+(i+1)+'</td>'
       +'<td><span class="tag '+(s.type==='complaint'?'dz':'g')+'">'+(s.type==='complaint'?'شكوى':'مقترح')+'</span></td>'
-      +'<td class="nm">'+esc(s.title||'')+'</td><td>'+esc(s.userName||'—')+'</td>'
+      +'<td class="nm">'+esc(s.title||'')+(s.img?'<br><a href="'+s.img+'" target="_blank"><img src="'+s.img+'" style="max-width:80px;max-height:60px;border-radius:6px;margin-top:4px"></a>':'')+'</td><td>'+esc(s.userName||'—')+'</td>'
       +'<td style="font-size:11px">'+(s.date||'').slice(0,10)+'</td>'
       +'<td><b style="font-size:12px">'+(sl[s.status]||'جديد')+'</b></td>'
       +(isAdmin?'<td><select onchange="updateSugStatus('+s.id+',this.value)" style="font-size:12px;border:1px solid var(--line);border-radius:6px;padding:3px 6px">'
@@ -3386,9 +3389,25 @@ function submitSuggestion(){
   const body=document.getElementById('sug-body')?.value?.trim();
   const type=document.getElementById('sug-type')?.value||'suggestion';
   if(!title)return say('أدخل عنوان الطلب.');
-  if(!S.suggestions)S.suggestions=[];
-  S.suggestions.push({id:Date.now(),type,title,body,uid:me()?.id,userName:me()?.name||'',date:new Date().toISOString(),status:'new'});
-  save();ui.sugForm=false;flash('تم إرسال طلبك.','ok');render();
+  const imgFile=document.getElementById('sug-img')?.files?.[0];
+  if(imgFile){
+    flash('جاري رفع الصورة...','warn');
+    const fd=new FormData();
+    fd.append('file',imgFile);
+    fd.append('upload_preset','almaher_pics');
+    fd.append('cloud_name','xix6pven');
+    fetch('https://api.cloudinary.com/v1_1/xix6pven/image/upload',{method:'POST',body:fd})
+      .then(r=>r.json())
+      .then(d=>{
+        if(!S.suggestions)S.suggestions=[];
+        S.suggestions.push({id:Date.now(),type,title,body,img:d.secure_url,uid:me()?.id,userName:me()?.name||'',date:new Date().toISOString(),status:'new'});
+        save();ui.sugForm=false;flash('تم إرسال طلبك مع الصورة.','ok');render();
+      }).catch(()=>say('فشل رفع الصورة، حاول مرة أخرى.'));
+  } else {
+    if(!S.suggestions)S.suggestions=[];
+    S.suggestions.push({id:Date.now(),type,title,body,uid:me()?.id,userName:me()?.name||'',date:new Date().toISOString(),status:'new'});
+    save();ui.sugForm=false;flash('تم إرسال طلبك.','ok');render();
+  }
 }
 function updateSugStatus(id,status){
   const s=(S.suggestions||[]).find(x=>x.id===id);
