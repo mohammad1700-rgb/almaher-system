@@ -1468,14 +1468,16 @@ function pWeekly(){
   });
   const today=now.toISOString().slice(0,10);
   let html=weekBar('weekly')+'<div class="card"><h2>الإدخال اليومي</h2>'
-    +'<div class="tw" style="overflow-x:auto"><table class="d" style="min-width:700px"><thead><tr>'
-    +'<th style="text-align:right;min-width:140px">الطالب</th>';
+    +'<div class="tw" style="overflow-x:auto"><table class="d" style="min-width:900px"><thead><tr>'
+    +'<th style="text-align:right;min-width:160px">الطالب</th>';
   days.forEach(function(d){
     const isToday=d.date===today;
-    html+='<th style="text-align:center;font-size:11px;min-width:90px'+(isToday?';background:var(--gold-3)':'')+'">'
-      +d.label+'</th>';
+    html+='<th style="text-align:center;font-size:11px;min-width:130px'+(isToday?';background:var(--gold-3)':'')+'">'
+      +d.label
+      +(d.dayIdx!==5?'<br><button onclick="fillDay(''+d.date+'')" style="font-size:9px;padding:1px 6px;border:1px solid var(--gold);border-radius:4px;cursor:pointer;background:var(--gold-3);color:var(--navy);margin-top:3px">✓ تعبئة الكل</button>':'')
+      +'</th>';
   });
-  html+='<th style="min-width:100px">الخطة</th></tr></thead><tbody>';
+  html+='<th style="min-width:120px">الخطة</th></tr></thead><tbody>';
   rows.forEach(function(r){
     const sid=r.s.id;
     const fl=(S.flags&&S.flags[WEEK]&&S.flags[WEEK][sid])||{};
@@ -1492,36 +1494,60 @@ function pWeekly(){
       const bg=isToday?'background:var(--gold-3);':'';
       html+='<td style="'+bg+'padding:4px;vertical-align:top">';
       if(!isFriday){
-        html+='<div style="margin-bottom:2px"><button data-sid="'+sid+'" data-key="p_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:'+(portal?'#c62828':'#fff')+';color:'+(portal?'#fff':'inherit')+'">'+(portal?'✓ ':'')+'بوابة</button></div>';
-        html+='<div style="margin-bottom:2px"><button data-sid="'+sid+'" data-key="w_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:'+(ws?'#e65100':'#fff')+';color:'+(ws?'#fff':'inherit')+'">'+(ws?'✓ ':'')+'واتساب</button></div>';
+        html+='<div style="margin-bottom:2px"><button data-sid="'+sid+'" data-key="p_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;white-space:nowrap;background:'+(portal?'#c62828':'#fff')+';color:'+(portal?'#fff':'inherit')+'">'+(portal?'✓ ':'')+'عدم الإتمام (بوابة)</button></div>';
+        html+='<div style="margin-bottom:2px"><button data-sid="'+sid+'" data-key="w_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;white-space:nowrap;background:'+(ws?'#e65100':'#fff')+';color:'+(ws?'#fff':'inherit')+'">'+(ws?'✓ ':'')+'عدم الإرسال (واتساب)</button></div>';
       }
       if(isTasmee){
-        html+='<div><button data-sid="'+sid+'" data-key="a_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:'+(ab?'#1565c0':'#fff')+';color:'+(ab?'#fff':'inherit')+'">'+(ab?'✓ ':'')+'غياب</button></div>';
+        html+='<div><button data-sid="'+sid+'" data-key="a_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;white-space:nowrap;background:'+(ab?'#1565c0':'#fff')+';color:'+(ab?'#fff':'inherit')+'">'+(ab?'✓ ':'')+'الغياب عن التسميع</button></div>';
       }
       html+='</td>';
     });
-    // خانة الخطة - نهاية الأسبوع
+    // خانة الخطة
     const planDone=fl['plan_done'];
     const planDays2=fl['plan_takhaluf']||'';
     html+='<td style="text-align:center;padding:6px;vertical-align:middle">';
     if(planDone===undefined){
-      html+='<div style="font-size:10px;color:var(--muted);margin-bottom:3px">الخطة</div>';
+      html+='<div style="font-size:10px;color:var(--muted);margin-bottom:4px">التخلف عن الخطة</div>';
       html+='<button data-sid="'+sid+'" data-key="plan_done_yes" onclick="setPlan(this)" style="font-size:10px;padding:2px 5px;border:1px solid #2e7d32;border-radius:4px;cursor:pointer;background:#fff;color:#2e7d32;display:block;width:100%;margin-bottom:2px">✓ مكتملة</button>';
       html+='<button data-sid="'+sid+'" data-key="plan_done_no" onclick="setPlan(this)" style="font-size:10px;padding:2px 5px;border:1px solid #c62828;border-radius:4px;cursor:pointer;background:#fff;color:#c62828;display:block;width:100%">✗ تعثر</button>';
     } else if(planDone==='yes'){
-      html+='<span style="color:#2e7d32;font-weight:700;font-size:12px">✓ مكتملة</span><br>';
+      html+='<span style="color:#2e7d32;font-weight:700">✓ مكتملة</span><br>';
       html+='<button data-sid="'+sid+'" data-key="plan_reset" onclick="setPlan(this)" style="font-size:9px;padding:1px 4px;border:1px solid #ccc;border-radius:4px;cursor:pointer;color:var(--muted)">تعديل</button>';
     } else {
-      html+='<span style="color:#c62828;font-weight:700;font-size:12px">✗ تعثر</span><br>';
-      html+='<input type="number" min="1" max="6" value="'+planDays2+'" placeholder="أيام" data-sid="'+sid+'" onchange="setPlanDays(this)" style="width:45px;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:4px;text-align:center"> يوم<br>';
+      html+='<span style="color:#c62828;font-weight:700">✗ تعثر</span><br>';
+      html+='<input type="number" min="1" max="6" value="'+planDays2+'" placeholder="أيام" data-sid="'+sid+'" onchange="setPlanDays(this)" style="width:45px;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:4px;text-align:center;direction:ltr"> يوم<br>';
       html+='<button data-sid="'+sid+'" data-key="plan_reset" onclick="setPlan(this)" style="font-size:9px;padding:1px 4px;border:1px solid #ccc;border-radius:4px;cursor:pointer;color:var(--muted)">تعديل</button>';
     }
-    html+='</td>';
-    html+='</tr>';
+    html+='</td></tr>';
   });
   html+='</tbody></table></div></div>';
   return html;
 }
+function fillDay(date){
+  const fid=curFid();
+  if(!fid) return;
+  const rows=reportRows(WEEK,fid);
+  const DAY_NAMES=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const dayIdx=new Date(date).getDay();
+  if(!S.flags[WEEK]) S.flags[WEEK]={};
+  rows.forEach(function(r){
+    const sid=r.s.id;
+    const circle=S.circles.find(function(c){return c.id===r.s.cid;});
+    const circleDays=circle&&circle.days?circle.days:'';
+    const isTasmee=circleDays==='يوميا'||circleDays.indexOf(DAY_NAMES[dayIdx])>=0;
+    if(!S.flags[WEEK][sid]) S.flags[WEEK][sid]={};
+    S.flags[WEEK][sid]['p_'+date]=1;
+    S.flags[WEEK][sid]['p_'+date+'_at']=Date.now();
+    S.flags[WEEK][sid]['w_'+date]=1;
+    S.flags[WEEK][sid]['w_'+date+'_at']=Date.now();
+    if(isTasmee){
+      S.flags[WEEK][sid]['a_'+date]=1;
+      S.flags[WEEK][sid]['a_'+date+'_at']=Date.now();
+    }
+  });
+  save(); render();
+}
+
 function tdf(btn){
   const sid=+btn.dataset.sid, key=btn.dataset.key;
   const st=S.students.find(function(x){return x.id===sid;});
