@@ -3389,51 +3389,24 @@ function showSugDetail(id){
   const s=(S.suggestions||[]).find(x=>x.id===id);
   if(!s) return;
   const typeLabel=s.type==='complaint'?'شكوى':'مقترح';
-  const statusLabel={new:'جديد',processing:'قيد المعالجة',closed:'مغلق'};
-  // Create overlay
-  let ov=document.getElementById('sug-overlay');
-  if(!ov){ov=document.createElement('div');ov.id='sug-overlay';
-    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-    document.body.appendChild(ov);}
-  ov.innerHTML='<div style="background:#fff;border-radius:16px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;direction:rtl">'
-    +'<div style="background:#1a2340;color:#fff;padding:16px 20px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between">'
+  let html='<div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px" id="sug-ov" onclick="if(event.target.id===\'sug-ov\')document.getElementById(\'sug-ov\').remove()">'
+    +'<div style="background:#fff;border-radius:16px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;direction:rtl">'
+    +'<div style="background:#1a2340;color:#fff;padding:14px 18px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between">'
     +'<b>تفاصيل الطلب</b>'
-    +'<button onclick="document.getElementById('sug-overlay').style.display='none'" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px">✕</button></div>'
-    +'<div style="padding:20px;display:flex;flex-direction:column;gap:12px">'
-    +'<div><label style="font-size:11px;color:#666">النوع</label><div><b>'+typeLabel+'</b></div></div>'
-    +'<div><label style="font-size:11px;color:#666">العنوان</label><div><b>'+esc(s.title||'')+'</b></div></div>'
-    +'<div><label style="font-size:11px;color:#666">التفاصيل</label><div style="white-space:pre-wrap;background:#f7f4ee;padding:10px;border-radius:8px">'+esc(s.body||'لا يوجد')+'</div></div>'
-    +'<div><label style="font-size:11px;color:#666">مقدم الطلب</label><div>'+esc(s.userName||'—')+'</div></div>'
-    +'<div><label style="font-size:11px;color:#666">التاريخ</label><div>'+(s.date||'').slice(0,10)+'</div></div>'
-    +(s.img?'<div><label style="font-size:11px;color:#666">الصورة</label><div><a href="'+s.img+'" target="_blank"><img src="'+s.img+'" style="max-width:100%;border-radius:8px;margin-top:4px"></a></div></div>':'')
-    +(isMgr()?'<div><label style="font-size:11px;color:#666">تغيير الحالة</label>'
-      +'<select id="sug-status-sel" style="border:1px solid #ddd;border-radius:6px;padding:6px 10px;width:100%;margin-top:4px;font-family:inherit">'
-      +'<option value="new" '+(s.status==='new'?'selected':'')+'>جديد</option>'
-      +'<option value="processing" '+(s.status==='processing'?'selected':'')+'>قيد المعالجة</option>'
-      +'<option value="closed" '+(s.status==='closed'?'selected':'')+'>مغلق</option>'
-      +'</select>'
-      +'<button onclick="updateSugStatus('+id+',document.getElementById('sug-status-sel').value);document.getElementById('sug-overlay').style.display='none';render()" '
-      +'style="background:#2e7d32;color:#fff;border:none;border-radius:8px;padding:8px 16px;margin-top:8px;cursor:pointer;width:100%">حفظ الحالة</button></div>':'')
-    +'</div></div>';
-  ov.style.display='flex';
-  void(
-    '<div class="mod-body" style="display:flex;flex-direction:column;gap:12px">'
-    +'<div class="fld"><label>النوع</label><b>'+typeLabel+'</b></div>'
-    +'<div class="fld"><label>العنوان</label><b>'+esc(s.title||'')+'</b></div>'
-    +'<div class="fld"><label>التفاصيل</label><p style="white-space:pre-wrap;margin:0">'+esc(s.body||'لا يوجد')+'</p></div>'
-    +'<div class="fld"><label>مقدم الطلب</label>'+esc(s.userName||'—')+'</div>'
-    +'<div class="fld"><label>التاريخ</label>'+(s.date||'').slice(0,10)+'</div>'
-    +(s.img?'<div class="fld"><label>الصورة</label><a href="'+s.img+'" target="_blank"><img src="'+s.img+'" style="max-width:100%;border-radius:8px"></a></div>':'')
-    +'<div class="fld"><label>الحالة</label>'
-    +(isMgr()?'<select onchange="updateSugStatus('+id+',this.value);closeMod();render()" style="border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-family:var(--f)">'
-      +'<option value="new" '+(s.status==='new'?'selected':'')+'>جديد</option>'
-      +'<option value="processing" '+(s.status==='processing'?'selected':'')+'>قيد المعالجة</option>'
-      +'<option value="closed" '+(s.status==='closed'?'selected':'')+'>مغلق</option>'
-      +'</select>'
-      :(statusLabel[s.status]||'جديد'))
-    +'</div>'
-    );
+    +'<button onclick="document.getElementById(\'sug-ov\').remove()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px">✕</button></div>'
+    +'<div style="padding:18px;display:flex;flex-direction:column;gap:10px">'
+    +'<div><div style="font-size:11px;color:#999;margin-bottom:2px">النوع</div><b>'+typeLabel+'</b></div>'
+    +'<div><div style="font-size:11px;color:#999;margin-bottom:2px">العنوان</div><b>'+esc(s.title||'')+'</b></div>'
+    +'<div><div style="font-size:11px;color:#999;margin-bottom:2px">التفاصيل</div><div style="white-space:pre-wrap;background:#f5f5f5;padding:8px 10px;border-radius:6px;font-size:13px">'+esc(s.body||'لا يوجد')+'</div></div>'
+    +'<div><div style="font-size:11px;color:#999;margin-bottom:2px">مقدم الطلب</div>'+esc(s.userName||'—')+'</div>'
+    +'<div><div style="font-size:11px;color:#999;margin-bottom:2px">التاريخ</div>'+(s.date||'').slice(0,10)+'</div>';
+  if(s.img) html+='<div><div style="font-size:11px;color:#999;margin-bottom:2px">الصورة</div><a href="'+s.img+'" target="_blank"><img src="'+s.img+'" style="max-width:100%;border-radius:8px"></a></div>';
+  html+='</div></div></div>';
+  const el=document.createElement('div');
+  el.innerHTML=html;
+  document.body.appendChild(el.firstChild);
 }
+
 function submitSuggestion(){
   const title=document.getElementById('sug-title')?.value?.trim();
   const body=document.getElementById('sug-body')?.value?.trim();
