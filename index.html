@@ -3596,28 +3596,24 @@ function pTasks(){
         return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);background:${done?'var(--cream)':'var(--white)'}">
           ${(()=>{
             const _h=new Date().getHours();
-            const _day=new Date().getDay(); // 6=السبت
+            const _day=new Date().getDay();
             const _dom=new Date().getDate();
             const _lastDay=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();
             const _inWindow=_h>=7&&_h<24;
-            // هل المهمة متاحة الإتمام؟
             let _avail=false;
             if(t.freq==='daily') _avail=_inWindow;
             else if(t.freq==='weekly') _avail=_day===6&&_inWindow;
             else if(t.freq==='monthly') _avail=_dom===_lastDay&&_inWindow;
-            else _avail=false; // فصلية/سنوية/استثنائية: للاطلاع فقط
-
             if(_avail){
-              return \`<div style="display:flex;align-items:center;gap:6px">
-                <input type="checkbox" \${done?'checked':''} onchange="toggleTask('\${doneKey}',this.checked,\${t.score||1})" style="width:18px;height:18px;cursor:pointer">
-                <span style="font-size:11px;color:var(--ok);font-weight:600">متاح</span>
-              </div>\`;
+              return '<div style="display:flex;align-items:center;gap:6px">' +
+                '<input type="checkbox" '+(done?'checked':'')+' onchange="toggleTask(''+doneKey+'',this.checked,'+(t.score||1)+')" style="width:18px;height:18px;cursor:pointer">' +
+                '<span style="font-size:11px;color:var(--ok);font-weight:600">متاح</span></div>';
             } else if(t.freq==='seasonal'||t.freq==='yearly'||t.freq==='exceptional'){
-              return \`<span style="font-size:11px;color:var(--muted)">للاطلاع</span>\`;
+              return '<span style="font-size:11px;color:var(--muted)">للاطلاع</span>';
             } else {
-              return \`<div style="display:flex;align-items:center;gap:6px">
-                \${done?'<span style="color:var(--ok);font-size:16px">✓</span>':''}
-                <span style="font-size:11px;color:var(--muted)">\${t.freq==='weekly'?'السبت':t.freq==='monthly'?'آخر الشهر':''}</span>
+              return '<div style="display:flex;align-items:center;gap:6px">' +
+                (done?'<span style="color:var(--ok);font-size:16px">✓</span>':'') +
+                '<span style="font-size:11px;color:var(--muted)">'+(t.freq==='weekly'?'السبت':t.freq==='monthly'?'آخر الشهر':'')+'</span>
               </div>\`;
             }
           })()}
