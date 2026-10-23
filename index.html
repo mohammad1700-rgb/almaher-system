@@ -1467,6 +1467,10 @@ function pWeekly(){
     return {label:DAY_NAMES[i]+' '+d.getDate()+'/'+(d.getMonth()+1), date:d.toISOString().slice(0,10), dayIdx:i};
   });
   const today=now.toISOString().slice(0,10);
+  // خانة الخطة تُفتح بعد الأحد 12 ليلاً حتى الاثنين 1 ظهراً
+  const planNow=new Date();
+  const planDay=planNow.getDay(), planH=planNow.getHours();
+  const planWindowOpen=(planDay===0&&planH>=0)||(planDay===1&&planH<13);
   let html=weekBar('weekly')+'<div class="card"><h2>الإدخال اليومي</h2>'
     +'<div class="tw" style="overflow-x:auto"><table class="d" style="min-width:900px"><thead><tr>'
     +'<th style="text-align:right;min-width:160px">الطالب</th>';
@@ -1507,9 +1511,13 @@ function pWeekly(){
     const planDays2=fl['plan_takhaluf']||'';
     html+='<td style="text-align:center;padding:6px;vertical-align:middle">';
     if(planDone===undefined){
+      if(!planWindowOpen){
+        html+='<span style="font-size:11px;color:var(--muted)">يُفتح الأحد</span>';
+      } else {
       html+='<div style="font-size:10px;color:var(--muted);margin-bottom:4px">التخلف عن الخطة</div>';
       html+='<button data-sid="'+sid+'" data-key="plan_done_yes" onclick="setPlan(this)" style="font-size:10px;padding:2px 5px;border:1px solid #2e7d32;border-radius:4px;cursor:pointer;background:#fff;color:#2e7d32;display:block;width:100%;margin-bottom:2px">✓ مكتملة</button>';
       html+='<button data-sid="'+sid+'" data-key="plan_done_no" onclick="setPlan(this)" style="font-size:10px;padding:2px 5px;border:1px solid #c62828;border-radius:4px;cursor:pointer;background:#fff;color:#c62828;display:block;width:100%">✗ تعثر</button>';
+      }
     } else if(planDone==='yes'){
       html+='<span style="color:#2e7d32;font-weight:700">✓ مكتملة</span><br>';
       html+='<button data-sid="'+sid+'" data-key="plan_reset" onclick="setPlan(this)" style="font-size:9px;padding:1px 4px;border:1px solid #ccc;border-radius:4px;cursor:pointer;color:var(--muted)">تعديل</button>';
@@ -1522,6 +1530,18 @@ function pWeekly(){
   });
   html+='</tbody></table></div></div>';
   return html;
+}
+function fillAllPlan(){
+  const fid=curFid(); if(!fid) return;
+  const rows=reportRows(WEEK,fid);
+  if(!S.flags[WEEK]) S.flags[WEEK]={};
+  rows.forEach(function(r){
+    const sid=r.s.id;
+    if(!S.flags[WEEK][sid]) S.flags[WEEK][sid]={};
+    if(!S.flags[WEEK][sid]['plan_done'])
+      S.flags[WEEK][sid]['plan_done']='yes';
+  });
+  save(); render();
 }
 function fillDay(date){
   const fid=curFid();
