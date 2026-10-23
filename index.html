@@ -3032,7 +3032,7 @@ function modal(title, body, foot){
 function closeModal(){ $('lay')?.remove(); }
 
 /* ---------------- الهيكل والتوجيه ---------------- */
-let ui = {q:'',sugForm:false,openFollower:null,taskForm:false,sdEdit:false,sq:'',cq:'',sdq:'',sdRole:'',sdOpen:null,show:'active',day:null,fid:null,sid:null,kind:null,ec:null,pnode:null,atab:'sanc',ttab:'students',rtab:'week',dq:'',t:null};
+let ui = {q:'',sugForm:false,openFollower:null,taskForm:false,sq:'',cq:'',sdq:'',sdRole:'',sdOpen:null,show:'active',day:null,fid:null,sid:null,kind:null,ec:null,pnode:null,atab:'sanc',ttab:'students',rtab:'week',dq:'',t:null};
 function go(p,show){
   closeSheet(); PAGE=p;
   if(show) ui.show=show; else if(p==='students') ui.show='active';
@@ -3155,8 +3155,7 @@ function pStaffData(){
       const rc = p.role&&p.role.includes('مشرف')?'x':p.role&&p.role.includes('متابع')?'r':'m';
       return `<div class="card">
         <div style="background:var(--navy);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px">
-          <button class="btn o sm" onclick="ui.sdOpen=null;ui.sdEdit=false;render()" style="color:#fff;border-color:#fff;background:rgba(255,255,255,.15)">← رجوع</button>
-          ${isMgr()?`<button class="btn g sm" onclick="openStaffEditMod(${ui.sdOpen})" style="color:#fff">✏️ تعديل</button>`:''}
+          <button class="btn o sm" onclick="ui.sdOpen=null;render()" style="color:#fff;border-color:rgba(255,255,255,.4)">← رجوع</button>
           <div class="sd-av" style="width:48px;height:48px;font-size:18px">${av}</div>
           <div>
             <div style="font-weight:700;font-size:16px">${esc(p.name)}</div>
@@ -3237,60 +3236,6 @@ function pStaffData(){
 
 
 
-
-
-
-function openStaffEditMod(idx){
-  const p = STAFF_DATA[idx];
-  if(!p) return;
-  const html = `<div class="mod-body" style="display:flex;flex-direction:column;gap:12px">
-    <div class="fld"><label>الاسم</label><input id="se-name" value="${esc(p.name||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
-    <div class="fld"><label>الجوال</label><input id="se-phone" value="${esc(p.phone||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
-    <div class="fld"><label>البريد</label><input id="se-email" value="${esc(p.email||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
-    <div class="fld"><label>رقم الهوية</label><input id="se-nid" value="${esc(p.nid||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
-    <div class="fld"><label>تاريخ الميلاد</label><input id="se-birth" value="${esc(p.birth_m||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
-    <div class="fld"><label>الدرجة العلمية</label><input id="se-degree" value="${esc(p.degree||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
-    <div class="fld"><label>رقم الآيبان</label><input id="se-iban" value="${esc(p.iban||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
-    <div class="fld"><label>البنك</label><input id="se-bank" value="${esc(p.bank||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
-    <div class="fld"><label>المكافأة الشهرية (ريال)</label><input id="se-salary" type="number" value="${esc(String(p.salary||''))}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
-  </div>
-  <div class="mod-foot">
-    <button class="btn g" onclick="saveStaffEdit(${idx})">💾 حفظ</button>
-    <button class="btn o" onclick="closeMod()">إلغاء</button>
-  </div>`;
-  openMod('تعديل بيانات ' + p.name, html);
-}
-
-function saveStaffEdit(idx){
-  if(idx===null||idx===undefined) return;
-  const p = STAFF_DATA[idx];
-  if(!p) return;
-  p.name = document.getElementById('se-name')?.value?.trim() || p.name;
-  p.phone = document.getElementById('se-phone')?.value?.trim() || p.phone;
-  p.email = document.getElementById('se-email')?.value?.trim() || p.email;
-  p.nid = document.getElementById('se-nid')?.value?.trim() || p.nid;
-  p.birth_m = document.getElementById('se-birth')?.value?.trim() || p.birth_m;
-  p.degree = document.getElementById('se-degree')?.value?.trim() || p.degree;
-  p.iban = document.getElementById('se-iban')?.value?.trim() || p.iban;
-  p.bank = document.getElementById('se-bank')?.value?.trim() || p.bank;
-  p.salary = document.getElementById('se-salary')?.value?.trim() || p.salary;
-  // حفظ في localStorage
-  try { localStorage.setItem('maher_staff_edits', JSON.stringify(STAFF_DATA)); } catch(e){}
-  closeMod();
-  flash('تم حفظ بيانات ' + p.name + ' بنجاح.', 'ok');
-  render();
-}
-
-// تحميل التعديلات المحفوظة
-(function(){
-  try {
-    const saved = localStorage.getItem('maher_staff_edits');
-    if(saved){
-      const edits = JSON.parse(saved);
-      edits.forEach((e,i)=>{ if(STAFF_DATA[i]) Object.assign(STAFF_DATA[i], e); });
-    }
-  } catch(e){}
-})();
 
 function openStaffCard(idx){
   ui.sdOpen = idx;
@@ -3539,12 +3484,6 @@ function pAllHourly(){
 
 
 function pTasks(){
-  // تهيئة المهام الافتراضية
-    if(!Array.isArray(S.tasks)||S.tasks.length===0){
-    const sec=curSec();
-    S.tasks=sec==='women'?[{"id": 101, "title": "إرسال الاستفتاء بالإتمام عبر المجموعة وملصق التذكير", "desc": "يومياً حتى الساعة 12:00 ليلاً", "freq": "daily", "score": 1}, {"id": 102, "title": "التذكير بمواعيد الحلقات للتسميع قبل وقتها بـ 3 ساعات", "desc": "في أيام التسميع المعتمدة", "freq": "daily", "score": 1}, {"id": 103, "title": "إرسال الإشعارات والتنبيهات الواردة من إدارة البرنامج أو الجمعية", "desc": "الأخبار والإعلانات", "freq": "daily", "score": 1}, {"id": 104, "title": "متابعة الطالبة في تنفيذ خطتها", "freq": "daily", "score": 1}, {"id": 105, "title": "استقبال استفسارات الطالبات والإجابة عليها خلال 24 ساعة", "freq": "daily", "score": 1}, {"id": 106, "title": "رفع المشكلات إلى مشرفة البرامج أو إدارة البرنامج", "freq": "daily", "score": 1}, {"id": 107, "title": "الحضور إلى حلقات التسميع في وقتها", "freq": "weekly", "score": 1}, {"id": 108, "title": "متابعة سير العملية التعليمية ومعالجة المشكلات", "freq": "weekly", "score": 1}, {"id": 109, "title": "متابعة المعلمات في رصد حضور الطالبات وتقييمهن في التسميع اليومي", "freq": "weekly", "score": 1}, {"id": 110, "title": "التأكد من إتمام رصد المعلمة بشكل يومي", "freq": "weekly", "score": 1}, {"id": 111, "title": "إنهاء متطلبات الساعة الأسبوعية كاملة يوم السبت", "freq": "weekly", "score": 1}, {"id": 112, "title": "إضافة جميع طالبات المجموعة في وسيلة التواصل المعتمدة وتحديثها", "freq": "monthly", "score": 1}, {"id": 113, "title": "اللقاء بالطالبة حضورياً مرة كل شهر أو التواصل هاتفياً", "freq": "monthly", "score": 1}, {"id": 114, "title": "إدارة مشروع السرد الفصلي", "desc": "حصر الطالبات وإبلاغهن ومتابعة حضورهن واستقبال الاعتذارات", "freq": "seasonal", "score": 2}, {"id": 115, "title": "التكليف ببعض المهام من قِبل المشرفة", "freq": "exceptional", "score": 1}]:[{"id": 1, "title": "إرسال الاستفتاء بالإتمام عبر المجموعة وملصق التذكير", "desc": "يومياً حتى الساعة 12:00 ليلاً", "freq": "daily", "score": 1}, {"id": 2, "title": "التذكير بمواعيد الحلقات للتسميع قبل وقتها بـ 3 ساعات", "desc": "في أيام التسميع المعتمدة", "freq": "daily", "score": 1}, {"id": 3, "title": "إرسال الإشعارات والتنبيهات الواردة من إدارة البرنامج", "desc": "الأخبار والإعلانات", "freq": "daily", "score": 1}, {"id": 4, "title": "متابعة الطالب في تنفيذ خطته", "freq": "daily", "score": 1}, {"id": 5, "title": "استقبال استفسارات الطلاب والإجابة عليها خلال 24 ساعة", "freq": "daily", "score": 1}, {"id": 6, "title": "رفع المشكلات إلى مشرف البرامج أو إدارة البرنامج", "freq": "daily", "score": 1}, {"id": 7, "title": "الحضور إلى حلقات التسميع في وقتها", "freq": "weekly", "score": 1}, {"id": 8, "title": "متابعة سير العملية التعليمية ومعالجة المشكلات", "freq": "weekly", "score": 1}, {"id": 9, "title": "متابعة المعلمين في رصد حضور الطلاب وتقييمهم في التسميع اليومي", "freq": "weekly", "score": 1}, {"id": 10, "title": "التأكد من إتمام الرصد بشكل يومي", "freq": "weekly", "score": 1}, {"id": 11, "title": "إنهاء متطلبات الساعة الأسبوعية كاملة يوم السبت", "freq": "weekly", "score": 1}, {"id": 12, "title": "إضافة جميع طلاب المجموعة في وسيلة التواصل المعتمدة وتحديثها", "freq": "monthly", "score": 1}, {"id": 13, "title": "اللقاء بالطالب حضورياً مرة كل شهر أو التواصل هاتفياً", "freq": "monthly", "score": 1}, {"id": 14, "title": "إدارة مشروع السرد الفصلي", "desc": "حصر الطلاب وإبلاغهم ومتابعة حضورهم واستقبال الاعتذارات", "freq": "seasonal", "score": 2}, {"id": 15, "title": "التكليف ببعض المهام من قِبل المشرف", "freq": "exceptional", "score": 1}];
-    save();
-  }
   const myId = me()?.id;
   const isAdmin = isMgr();
   const tasks = Array.isArray(S.tasks) ? S.tasks : [];
@@ -3567,24 +3506,6 @@ function pTasks(){
   return `<div class="card"><h2>مهامي ومسؤولياتي
     ${isAdmin?`<button class="btn g sm" style="margin-right:auto" onclick="ui.taskForm=true;render()">+ إضافة مهمة</button>`:''}
   </h2>
-    ${'Notification' in window && Notification.permission !== 'granted' ? 
-      `<div class="pad" style="background:#fff3e0;border-bottom:1px solid #ffcc80;display:flex;align-items:center;gap:12px">
-        <span style="font-size:13px">🔔 فعّل الإشعارات لتصلك تذكيرات بمواعيد المهام</span>
-        <button class="btn g sm" onclick="requestNotifPermission();render()">تفعيل الإشعارات</button>
-      </div>` : 
-      Notification.permission === 'granted' ? 
-      `<div class="pad" style="background:#e8f5e9;border-bottom:1px solid #a5d6a7;font-size:12px;color:var(--ok)">
-        ✅ الإشعارات مفعّلة — ستصلك تذكيرات يومياً الساعة 1 ظهراً، أسبوعياً يوم السبت، وشهرياً في آخر يوم من الشهر
-      </div>` : ''}
-    ${(()=>{
-      const totalScore=tasks.reduce((a,t)=>{const k=myId+'_'+t.id+'_'+today;const d=S.taskDone?.[k];return a+(d&&d.score?d.score:0);},0);
-      const maxScore=tasks.reduce((a,t)=>a+(t.score||1),0);
-      if(!totalScore) return '';
-      return '<div class="pad" style="background:var(--gold-3);border-bottom:1px solid var(--gold-2);display:flex;align-items:center;gap:12px">' +
-        '<span style="font-size:13px;font-weight:700">درجاتك اليوم:</span>' +
-        '<span style="font-size:20px;font-weight:700;color:var(--gold)">' + totalScore + '</span>' +
-        '<span style="font-size:13px;color:var(--muted)">من ' + maxScore + '</span></div>';
-    })()}
     ${freqOrder.filter(f=>grouped[f].length).map(f=>`
       <div style="margin:0 0 4px"><div style="background:var(--navy);color:#fff;padding:9px 16px;font-weight:700;font-size:13px">
         ${freqLabel[f]} — ${grouped[f].length} مهام
@@ -3594,29 +3515,7 @@ function pTasks(){
         const doneKey=myId+'_'+t.id+'_'+today;
         const done=!!(S.taskDone||{})[doneKey];
         return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);background:${done?'var(--cream)':'var(--white)'}">
-          ${(()=>{
-            const _h=new Date().getHours();
-            const _day=new Date().getDay();
-            const _dom=new Date().getDate();
-            const _lastDay=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();
-            const _inWindow=_h>=7&&_h<24;
-            let _avail=false;
-            if(t.freq==='daily') _avail=_inWindow;
-            else if(t.freq==='weekly') _avail=_day===6&&_inWindow;
-            else if(t.freq==='monthly') _avail=_dom===_lastDay&&_inWindow;
-            if(_avail){
-              return '<div style="display:flex;align-items:center;gap:6px">' +
-                '<input type="checkbox" '+(done?'checked':'')+' onchange="toggleTask(''+doneKey+'',this.checked,'+(t.score||1)+')" style="width:18px;height:18px;cursor:pointer">' +
-                '<span style="font-size:11px;color:var(--ok);font-weight:600">متاح</span></div>';
-            } else if(t.freq==='seasonal'||t.freq==='yearly'||t.freq==='exceptional'){
-              return '<span style="font-size:11px;color:var(--muted)">للاطلاع</span>';
-            } else {
-              return '<div style="display:flex;align-items:center;gap:6px">' +
-                (done?'<span style="color:var(--ok);font-size:16px">✓</span>':'') +
-                '<span style="font-size:11px;color:var(--muted)">'+(t.freq==='weekly'?'السبت':t.freq==='monthly'?'آخر الشهر':'')+'</span>
-              </div>\`;
-            }
-          })()}
+          <input type="checkbox" ${done?'checked':''} onchange="toggleTask('${doneKey}',this.checked)" style="width:18px;height:18px;cursor:pointer">
           <div style="flex:1"><div style="font-weight:${done?'400':'600'};text-decoration:${done?'line-through':'none'};color:${done?'var(--muted)':'var(--ink)'}">${esc(t.title)}</div>
           ${t.desc?`<div style="font-size:12px;color:var(--muted)">${esc(t.desc)}</div>`:''}</div>
           <span style="font-size:11px;color:var(--gold);font-weight:600">${t.score||1} درجة</span>
@@ -3633,81 +3532,15 @@ function submitTask(){
   const freq=document.getElementById('task-freq')?.value;
   const score=+document.getElementById('task-score')?.value||1;
   if(!title)return say('أدخل عنوان المهمة.');
-
+  if(!Array.isArray(S.tasks))S.tasks=[];
   S.tasks.push({id:Date.now(),title,desc,freq,score});
   save();ui.taskForm=false;flash('تمت إضافة المهمة.','ok');render();
 }
-function toggleTask(key,done,score){
+function toggleTask(key,done){
   if(!S.taskDone)S.taskDone={};
-  if(done){
-    S.taskDone[key]={done:1,score:score||1,time:new Date().toISOString()};
-    flash('✅ أحسنت! تم تسجيل الإتمام وإضافة '+(score||1)+' درجة.','ok');
-  } else {
-    delete S.taskDone[key];
-  }
+  if(done)S.taskDone[key]=1;else delete S.taskDone[key];
   save();
-  render();
 }
-
-/* نظام الإشعارات للمهام */
-function requestNotifPermission(){
-  if(!('Notification' in window)) return;
-  if(Notification.permission === 'default'){
-    Notification.requestPermission();
-  }
-}
-
-function sendNotif(title, body){
-  if(!('Notification' in window)) return;
-  if(Notification.permission === 'granted'){
-    new Notification(title, {body, icon: '/favicon.ico', dir:'rtl', lang:'ar'});
-  }
-}
-
-function checkTaskNotifs(){
-  const now = new Date();
-  const h = now.getHours(), m = now.getMinutes();
-  const day = now.getDay(); // 6=السبت
-  const dayOfMonth = now.getDate();
-  const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
-  const today = now.toISOString().slice(0,10);
-  const myId = me()?.id;
-  if(!myId) return;
-  
-  const tasks = Array.isArray(S.tasks) ? S.tasks : [];
-  const taskDone = S.taskDone || {};
-  
-  // يومية: الساعة 1 ظهراً (13:00)
-  if(h===13 && m===0){
-    const pending = tasks.filter(t=>t.freq==='daily' && !taskDone[myId+'_'+t.id+'_'+today]);
-    if(pending.length > 0){
-      sendNotif('⏰ مهامك اليومية', `لديك ${pending.length} مهمة يومية لم تُنجز بعد`);
-    }
-  }
-  
-  // أسبوعية: يوم السبت الساعة 1 ظهراً
-  if(day===6 && h===13 && m===0){
-    const pending = tasks.filter(t=>t.freq==='weekly' && !taskDone[myId+'_'+t.id+'_'+today]);
-    if(pending.length > 0){
-      sendNotif('📅 مهامك الأسبوعية', `يوم السبت — لديك ${pending.length} مهمة أسبوعية`);
-    }
-  }
-  
-  // شهرية: آخر يوم من الشهر الساعة 1 ظهراً
-  if(dayOfMonth===lastDay && h===13 && m===0){
-    const pending = tasks.filter(t=>t.freq==='monthly' && !taskDone[myId+'_'+t.id+'_'+today]);
-    if(pending.length > 0){
-      sendNotif('📆 مهامك الشهرية', `آخر يوم من الشهر — لديك ${pending.length} مهمة شهرية`);
-    }
-  }
-}
-
-// تشغيل فحص الإشعارات كل دقيقة
-if(!window._notifInterval){
-  window._notifInterval = setInterval(checkTaskNotifs, 60000);
-  requestNotifPermission();
-}
-
 function deleteTask(id){
   if(!confirm('حذف المهمة؟'))return;
   S.tasks=(S.tasks||[]).filter(t=>t.id!==id);
