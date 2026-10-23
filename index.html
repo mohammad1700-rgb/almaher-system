@@ -3151,26 +3151,17 @@ document.addEventListener('click', function(e){
   if(t.id==='srch-circles-btn')  { e.stopPropagation(); openSrch('circles'); }
 }, true);
 
-/* منع تسرب أحداث لوحة المفاتيح من حقول الإدخال إلى بيئة النشر */
+/* منع تسرب أحداث لوحة المفاتيح - نسخة محدودة لا تمنع الكتابة */
 (function(){
   function trapKey(e){
     if(e.target && e.target.matches && e.target.matches('input,textarea,select,[contenteditable]')){
-      e.stopImmediatePropagation();
+      // فقط نمنع التسرب، لا نمنع الكتابة
       e.stopPropagation();
     }
   }
-  const opts = {capture:true, passive:false};
-  ['keydown','keyup','keypress'].forEach(t=>{
-    window.addEventListener(t, trapKey, opts);
+  const opts = {capture:false, passive:true};
+  ['keydown','keyup'].forEach(t=>{
     document.addEventListener(t, trapKey, opts);
-    document.documentElement.addEventListener(t, trapKey, opts);
-    document.body && document.body.addEventListener(t, trapKey, opts);
-  });
-  // Re-attach after DOM ready in case body wasn't ready
-  document.addEventListener('DOMContentLoaded', ()=>{
-    ['keydown','keyup','keypress'].forEach(t=>{
-      document.body.addEventListener(t, trapKey, opts);
-    });
   });
 })();
 </script>
