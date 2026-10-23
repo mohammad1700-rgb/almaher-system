@@ -1956,8 +1956,8 @@ function pHourly(){
   const pc = c => n ? c/n*100 : null;
   const pS=pc(cS), pA=pc(cA), pP=pc(cP);
   const ap3=S.approvals?.[WEEK]?.[fid];
-  const apDay3=ap3?new Date(ap3.at||ap3.ver||0).getDay():-1;
-  const ontime3=(apDay3===0||apDay3===1)?20:0;
+  const apDate3=ap3?new Date(ap3.at||ap3.ver||0):null;
+  const ontime3=(apDate3&&apDate3.getDay()===1&&apDate3.getHours()<13)?20:0;
   const disc = n ? Math.max(0, ontime3 - pS*0.20 - pA*0.30 - pP*0.30 + (100-ontime3)) : null;
   const ed = can('student.edit');
   const sel = (v,x)=> String(v??'')===String(x) ? ' selected' : '';
@@ -3467,9 +3467,9 @@ function pRanking(){
       if(r.sh.days||fl.plan||(r.plan!==null&&r.plan!==''&&+r.plan<r.quota))plan.push(1);
     });
     const ap=S.approvals?.[WEEK]?.[p.id];
-    const approvedDay=ap?new Date(ap.at||ap.ver||0).getDay():-1;
-    const ontime=(approvedDay===0||approvedDay===1)?20:0;
-    const score=Math.max(0,ontime-(late.length/rows.length)*20-(abs.length/rows.length)*30-(plan.length/rows.length)*30+100-ontime);
+    const apDate=ap?new Date(ap.at||ap.ver||0):null;
+    const ontime=(apDate&&apDate.getDay()===1&&apDate.getHours()<13)?20:0;
+    const score=Math.max(0,ontimeScore-(late.length/rows.length)*20-(abs.length/rows.length)*30-(plan.length/rows.length)*30+100-ontimeScore);
     return {p,score};
   }).sort((a,b)=>b.score-a.score);
   const medals=['🥇','🥈','🥉'];
@@ -3493,7 +3493,7 @@ function pAllHourly(){
   
   // توقيت الإدخال: الأحد=0 والاثنين=1 فقط
   const today=new Date().getDay();
-  const isEntryDay=(today===0||today===1);
+  const isEntryDay=true; // الإدخال مفتوح طول الأسبوع
   
   // تاريخ الأسبوع الماضي
   const now=new Date();
@@ -3523,7 +3523,7 @@ function pAllHourly(){
     +'<div style="background:var(--navy);color:#fff;padding:14px 18px;border-radius:10px 10px 0 0">'
     +'<div style="font-size:16px;font-weight:700">تقرير الساعة الأسبوعية</div>'
     +'<div style="font-size:12px;opacity:.7;margin-top:4px">الأسبوع الماضي: '+weekRange+'</div>'
-    +(!isEntryDay?'<div style="font-size:11px;background:rgba(255,165,0,.2);border-radius:6px;padding:4px 10px;margin-top:6px;display:inline-block">⏳ الإدخال متاح أيام الأحد والاثنين إلى الساعة الواحدة ظهراً</div>':'')
+    +(!isEntryDay?'<div style="font-size:11px;background:rgba(255,165,0,.2);border-radius:6px;padding:4px 10px;margin-top:6px;display:inline-block">⏳ الاعتماد يكون يوم الاثنين قبل الساعة الواحدة ظهراً</div>':'')
     +'</div>'
     +'<div style="padding:12px 16px;background:var(--cream);border-bottom:1px solid var(--gold-2);display:flex;gap:24px;flex-wrap:wrap">'
     +'<div><div style="font-size:11px;color:var(--muted)">إجمالي الطلاب</div><b>'+totalStudents+'</b></div>'
