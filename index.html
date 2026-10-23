@@ -3535,14 +3535,18 @@ function pTasks(){
         return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);background:${done?'var(--cream)':'var(--white)'}">
           ${(()=>{
             const _h=new Date().getHours();
-            const _active=_h>=7&&_h<24;
-            const _day=new Date().getDay();
-            const _dom=new Date().getDate();
-            const _lastDay=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();
-            const _ok=(t.freq==='daily'&&_active)||(t.freq==='weekly'&&_day===6&&_active)||(t.freq==='monthly'&&_dom===_lastDay&&_active)||(t.freq==='seasonal'||t.freq==='exceptional');
-            return _ok
-              ? `<input type="checkbox" ${done?'checked':''} onchange="toggleTask('${doneKey}',this.checked,${t.score||1})" style="width:18px;height:18px;cursor:pointer" title="اضغط للإتمام">`
-              : `<span style="width:18px;height:18px;border:2px solid var(--line);border-radius:4px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;flex-shrink:0" title="يُتاح الإتمام من 7 صباحاً حتى 12 ليلاً">${done?'✓':'🔒'}</span>`;
+            const _avail=_h>=7&&_h<24;
+            if(_avail){
+              return `<div style="display:flex;align-items:center;gap:6px">
+                <input type="checkbox" ${done?'checked':''} onchange="toggleTask('${doneKey}',this.checked,${t.score||1})" style="width:18px;height:18px;cursor:pointer">
+                <span style="font-size:11px;color:var(--ok);font-weight:600">متاح</span>
+              </div>`;
+            } else {
+              return `<div style="display:flex;align-items:center;gap:6px">
+                ${done?'<span style="color:var(--ok);font-size:16px">✓</span>':'<span style="color:var(--muted);font-size:12px">—</span>'}
+                <span style="font-size:11px;color:var(--muted)">من 7ص-12م</span>
+              </div>`;
+            }
           })()}
           <div style="flex:1"><div style="font-weight:${done?'400':'600'};text-decoration:${done?'line-through':'none'};color:${done?'var(--muted)':'var(--ink)'}">${esc(t.title)}</div>
           ${t.desc?`<div style="font-size:12px;color:var(--muted)">${esc(t.desc)}</div>`:''}</div>
