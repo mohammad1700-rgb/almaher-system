@@ -720,7 +720,7 @@ function stat(k,v,acc,target,extra){
 /* =================== الصفحات =================== */
 const PAGES = () => ({
   home:    ['لوحة البرنامج', true],
-  staffdata:['بيانات الطاقم', isMgr()],
+  staffdata:['بيانات الطاقم الإداري والتعليمي', isMgr()],
   people:  ['الطاقم', true],
   students:['الطلاب', true],
   circles: ['الحلقات', true],
@@ -3148,7 +3148,7 @@ function pStaffData(){
     }
   }
 
-  return `<div class="card"><h2>بيانات الطاقم<span class="cnt">${rows.length}</span></h2>
+  return `<div class="card"><h2>بيانات الطاقم الإداري والتعليمي<span class="cnt">${rows.length}</span></h2>
     <div class="pad noprint"><div class="row">
       <input id="sd-search" value="" placeholder="ابحث بالاسم أو الجوال أو رقم الهوية"
         style="flex:1;max-width:380px;border:1.5px solid var(--gold-2);border-radius:8px;padding:7px 12px;font-family:var(--f);font-size:13px;outline:none;background:#fff;color:var(--ink)"
