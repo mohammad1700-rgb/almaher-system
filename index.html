@@ -3158,9 +3158,7 @@ function pStaffData(){
 
   return `<div class="card"><h2>بيانات الطاقم الإداري والتعليمي<span class="cnt">${rows.length}</span></h2>
     <div class="pad noprint"><div class="row">
-      <input id="sd-search" value="" placeholder="ابحث بالاسم أو الجوال أو رقم الهوية"
-        style="flex:1;max-width:380px;border:1.5px solid var(--gold-2);border-radius:8px;padding:7px 12px;font-family:var(--f);font-size:13px;outline:none;background:#fff;color:var(--ink)"
-        oninput="ui.sdq=this.value;filterStaff(this.value);" onkeydown="event.stopImmediatePropagation();" onkeyup="event.stopImmediatePropagation()">
+      <div id="sd-search-wrap" style="flex:1;max-width:380px"></div>
       <select onchange="ui.sdRole=this.value;render()" style="border:1.5px solid var(--line);border-radius:8px;padding:7px 12px;font-family:var(--f);font-size:13px;background:#fff">
         <option value="">جميع الأدوار</option>
         <option value="معلم">معلم/ة</option>
@@ -3221,7 +3219,14 @@ function render(){
   femize($('app'));
   /* ملء حقول البحث من الحالة واستعادة التركيز */
   const _restoreFocus = ()=>{
-    const sqMap = {'sq-ppl': ui.q||'', 'sq-stu': ui.sq||'', 'sq-cir': ui.cq||'', 'sd-search': ui.sdq||''};
+    // Inject staff search input (outside render loop)
+    const sdWrap = document.getElementById('sd-search-wrap');
+    if(sdWrap && !document.getElementById('sd-search')){
+      sdWrap.innerHTML = '<input id="sd-search" placeholder="ابحث بالاسم أو الجوال أو رقم الهوية" style="width:100%;border:1.5px solid var(--gold-2);border-radius:8px;padding:7px 12px;font-family:var(--f);font-size:13px;outline:none;background:#fff;color:var(--ink)" oninput=\'filterStaff(this.value)\' onkeydown=\'event.stopImmediatePropagation()\' onkeyup=\'event.stopImmediatePropagation()\'>';
+      const el = document.getElementById('sd-search');
+      if(el){ el.value = ui.sdq||''; el.focus(); }
+    }
+    const sqMap = {'sq-ppl': ui.q||'', 'sq-stu': ui.sq||'', 'sq-cir': ui.cq||''};
     Object.entries(sqMap).forEach(([id, val])=>{
       const el = document.getElementById(id);
       if(el) el.value = val;
