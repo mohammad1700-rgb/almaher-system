@@ -1955,7 +1955,10 @@ function pHourly(){
   const cS = late.length, cA = abs.length, cP = plan.length;
   const pc = c => n ? c/n*100 : null;
   const pS=pc(cS), pA=pc(cA), pP=pc(cP);
-  const disc = n ? Math.max(0, 100-(pS*0.20+pA*0.40+pP*0.40)) : null;
+  const ap3=S.approvals?.[WEEK]?.[fid];
+  const apDay3=ap3?new Date(ap3.at||ap3.ver||0).getDay():-1;
+  const ontime3=(apDay3===0||apDay3===1)?20:0;
+  const disc = n ? Math.max(0, ontime3 - pS*0.20 - pA*0.30 - pP*0.30 + (100-ontime3)) : null;
   const ed = can('student.edit');
   const sel = (v,x)=> String(v??'')===String(x) ? ' selected' : '';
 
@@ -3455,8 +3458,19 @@ function pRanking(){
   const fols=S.people.filter(p=>p.active&&p.section===curSec()&&p.role.startsWith('متابع'));
   const ranked=fols.map(p=>{
     const rows=reportRows(WEEK,p.id);
-    const done=rows.filter(r=>r.done);
-    return {p,score:done.length?done.reduce((a,r)=>a+r.pct,0)/done.length:0};
+    if(!rows.length) return {p,score:0};
+    const late=[],abs=[],plan=[];
+    rows.forEach(r=>{
+      const fl=S.flags?.[WEEK]?.[r.s.id]||{};
+      if(r.q.l||fl.send)late.push(1);
+      if(r.q.a||fl.abs)abs.push(1);
+      if(r.sh.days||fl.plan||(r.plan!==null&&r.plan!==''&&+r.plan<r.quota))plan.push(1);
+    });
+    const ap=S.approvals?.[WEEK]?.[p.id];
+    const approvedDay=ap?new Date(ap.at||ap.ver||0).getDay():-1;
+    const ontime=(approvedDay===0||approvedDay===1)?20:0;
+    const score=Math.max(0,ontime-(late.length/rows.length)*20-(abs.length/rows.length)*30-(plan.length/rows.length)*30+100-ontime);
+    return {p,score};
   }).sort((a,b)=>b.score-a.score);
   const medals=['🥇','🥈','🥉'];
   return '<div class="card"><h2>التقييم والترتيب</h2>'
@@ -3525,7 +3539,15 @@ function pAllHourly(){
       if(r.q.a||fl.abs)abs.push(r.s.name);
       if(r.sh.days||fl.plan||(r.plan!==null&&r.plan!==''&&+r.plan<r.quota))plan.push(r.s.name);
     });
-    const disc=Math.max(0,100-((late.length/rows.length)*20+(abs.length/rows.length)*40+(plan.length/rows.length)*40));
+    // الإدخال بالوقت المحدد (الأحد أو الاثنين) = 20% تلقائي
+    const ap=S.approvals?.[WEEK]?.[f.id];
+    const approvedDay=ap?new Date(ap.at||ap.ver||0).getDay():-1;
+    const ontime=(approvedDay===0||approvedDay===1)?20:0;
+    const disc=Math.max(0,ontime
+      -(late.length/rows.length)*20
+      -(abs.length/rows.length)*30
+      -(plan.length/rows.length)*30
+      +100-ontime);
     const open=ui.openFollower===f.id;
     // هل اعتمد التقرير هذا الأسبوع؟
     const hasReport=!!(S.approvals?.[WEEK]?.[f.id]);
