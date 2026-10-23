@@ -3160,7 +3160,7 @@ function pStaffData(){
     <div class="pad noprint"><div class="row">
       <input id="sd-search" value="" placeholder="ابحث بالاسم أو الجوال أو رقم الهوية"
         style="flex:1;max-width:380px;border:1.5px solid var(--gold-2);border-radius:8px;padding:7px 12px;font-family:var(--f);font-size:13px;outline:none;background:#fff;color:var(--ink)"
-        oninput="ui.sdq=this.value;" onkeydown="event.stopImmediatePropagation();if(event.key==='Enter'||event.key==='Return'){render();}" onkeyup="event.stopImmediatePropagation()">
+        oninput="ui.sdq=this.value;filterStaff(this.value);" onkeydown="event.stopImmediatePropagation();" onkeyup="event.stopImmediatePropagation()">
       <select onchange="ui.sdRole=this.value;render()" style="border:1.5px solid var(--line);border-radius:8px;padding:7px 12px;font-family:var(--f);font-size:13px;background:#fff">
         <option value="">جميع الأدوار</option>
         <option value="معلم">معلم/ة</option>
@@ -3175,6 +3175,15 @@ function pStaffData(){
   </div>`;
 }
 
+
+
+function filterStaff(q){
+  q = (q||'').trim().toLowerCase();
+  document.querySelectorAll('.sd-card').forEach(card=>{
+    const txt = card.textContent.toLowerCase();
+    card.style.display = (!q || txt.includes(q)) ? '' : 'none';
+  });
+}
 
 function render(){
   if(!SESSION){ $('app').innerHTML = loginView(); return; }
