@@ -762,7 +762,7 @@ const PAGES = () => ({
   staffdata:['بيانات الطاقم الإداري والتعليمي', isMgr()],
   suggestions:['الاقتراحات والشكاوى', true],
   ranking:['التقييم والترتيب', isMgr()],
-  allhourly:['التقرير الإجمالي', isMgr()],
+  allhourly:['تقرير الساعة الأسبوعية', isMgr()],
   tasks:['مهامي ومسؤولياتي', true],
   stats:['الإحصاءات الشاملة', isMgr()],
   activity: ['نشاط المتابعين', isMgr()],
@@ -3460,9 +3460,49 @@ function pRanking(){
 
 function pAllHourly(){
   if(!isMgr()) return '<div class="card"><div class="none">للمدير فقط.</div></div>';
+  
+  // توقيت الإدخال: الأحد=0 والاثنين=1 فقط
+  const today=new Date().getDay();
+  const isEntryDay=(today===0||today===1);
+  
+  // تاريخ الأسبوع الماضي
+  const now=new Date();
+  const thisMon=new Date(now); thisMon.setDate(now.getDate()-now.getDay()+1);
+  const lastMon=new Date(thisMon); lastMon.setDate(thisMon.getDate()-7);
+  const lastSun=new Date(lastMon); lastSun.setDate(lastMon.getDate()+6);
+  function fmt(d){return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();}
+  const weekRange=fmt(lastMon)+' — '+fmt(lastSun);
+  
   const fols=S.people.filter(p=>p.active&&p.section===curSec()&&p.role.startsWith('متابع'));
   if(!fols.length) return weekBar('allhourly')+'<div class="card"><div class="none">لا يوجد متابعون.</div></div>';
-  return weekBar('allhourly')+fols.map(f=>{
+  
+  // حساب الإجمالي
+  let totalLate=0,totalAbs=0,totalPlan=0,totalStudents=0;
+  fols.forEach(f=>{
+    const rows=reportRows(WEEK,f.id);
+    rows.forEach(r=>{
+      const fl=S.flags?.[WEEK]?.[r.s.id]||{};
+      if(r.q.l||fl.send)totalLate++;
+      if(r.q.a||fl.abs)totalAbs++;
+      if(r.sh.days||fl.plan||(r.plan!==null&&r.plan!==''&&+r.plan<r.quota))totalPlan++;
+    });
+    totalStudents+=rows.length;
+  });
+  
+  const header='<div class="card" style="margin-bottom:8px">'
+    +'<div style="background:var(--navy);color:#fff;padding:14px 18px;border-radius:10px 10px 0 0">'
+    +'<div style="font-size:16px;font-weight:700">تقرير الساعة الأسبوعية</div>'
+    +'<div style="font-size:12px;opacity:.7;margin-top:4px">الأسبوع الماضي: '+weekRange+'</div>'
+    +(!isEntryDay?'<div style="font-size:11px;background:rgba(255,165,0,.2);border-radius:6px;padding:4px 10px;margin-top:6px;display:inline-block">⏳ الإدخال متاح أيام الأحد والاثنين فقط</div>':'')
+    +'</div>'
+    +'<div style="padding:12px 16px;background:var(--cream);border-bottom:1px solid var(--gold-2);display:flex;gap:24px;flex-wrap:wrap">'
+    +'<div><div style="font-size:11px;color:var(--muted)">إجمالي الطلاب</div><b>'+totalStudents+'</b></div>'
+    +'<div><div style="font-size:11px;color:var(--muted)">المعتذرون</div><b style="color:var(--warn,#e65100)">⚠️ '+totalLate+'</b></div>'
+    +'<div><div style="font-size:11px;color:var(--muted)">المتغيبون</div><b style="color:#c62828">❌ '+totalAbs+'</b></div>'
+    +'<div><div style="font-size:11px;color:var(--muted)">المتعثرون</div><b style="color:#1565c0">📉 '+totalPlan+'</b></div>'
+    +'</div></div>';
+
+  return weekBar('allhourly')+header+fols.map(f=>{
     const rows=reportRows(WEEK,f.id);
     if(!rows.length) return '';
     const late=[],abs=[],plan=[];
