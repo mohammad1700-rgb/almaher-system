@@ -852,7 +852,7 @@ function pHome(){
   const items = reqs.concat(todo).concat((reqs.length+todo.length)<4?blanks.slice(0,4-reqs.length-todo.length):[]);
   const fdate = t => t ? dual(t) : '';
 
-  return pHonorBoard() + `<div class="hello"><h1>أهلا، ${esc(SESSION.name)}</h1>
+  return `<div class="hello"><h1>أهلا، ${esc(SESSION.name)}</h1>
     <p>اختر الصفحة التي تريدها.</p></div>
   <div class="sechd"><h3>${isMgr()||can('view.all')?'البرنامج':'مجموعتي'}</h3>
     <button class="lnkb" onclick="go('students')">كل الطلاب</button></div>
@@ -3324,18 +3324,13 @@ function pActivity(){
 
 function pHonorBoard(){
   const sec = curSec();
-  const followers = S.people.filter(p=>p.active&&(p.section===sec||sec==='all')&&p.role.startsWith('متابع'));
-  if(!followers.length) return '';
-  let scored = followers.map(p=>{
+  const followers = S.people.filter(p=>p.active&&p.section===sec&&p.role.startsWith('متابع'));
+  const scored = followers.map(p=>{
     const rows = reportRows(WEEK, p.id);
+    if(!rows.length) return {p, score:0};
     const done = rows.filter(r=>r.done);
-    const score = done.length ? done.reduce((a,r)=>a+r.pct,0)/done.length : 0;
-    return {p, score};
-  }).sort((a,b)=>b.score-a.score).slice(0,3);
-  // إذا لم توجد بيانات رصد، اعرض أول 3 متابعين
-  if(!scored.some(x=>x.score>0)){
-    scored = followers.slice(0,3).map(p=>({p, score:null}));
-  }
+    return {p, score: done.length ? done.reduce((a,r)=>a+r.pct,0)/done.length : 0};
+  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,3);
   if(!scored.length) return '';
   const medals=['🥇','🥈','🥉'], ranks=['الأول','الثاني','الثالث'];
   return `<div style="background:linear-gradient(135deg,#1a2340,#2d3a6b);color:#fff;border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
@@ -3345,7 +3340,7 @@ function pHonorBoard(){
         <div style="font-size:22px">${medals[i]}</div>
         <div style="font-size:11px;opacity:.7">${ranks[i]}</div>
         <div style="font-weight:700;font-size:13px">${esc(t.p.name)}</div>
-        <div style="font-size:11px;color:var(--gold-2)">${t.score!==null?n1(t.score)+'٪':''}</div>
+        <div style="font-size:11px;color:var(--gold-2)">${n1(t.score)}٪</div>
       </div>`).join('')}
     </div>
   </div>`;
