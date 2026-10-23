@@ -3155,8 +3155,8 @@ function pStaffData(){
       const rc = p.role&&p.role.includes('مشرف')?'x':p.role&&p.role.includes('متابع')?'r':'m';
       return `<div class="card">
         <div style="background:var(--navy);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px">
-          <button class="btn o sm" onclick="ui.sdOpen=null;ui.sdEdit=false;render()" style="color:#fff;border-color:rgba(255,255,255,.4)">← رجوع</button>
-          ${isMgr()?`<button class="btn g sm" onclick="ui.sdEdit=!ui.sdEdit;render()">${ui.sdEdit?'✕ إلغاء':'✏️ تعديل'}</button>`:''}
+          <button class="btn o sm" onclick="ui.sdOpen=null;ui.sdEdit=false;render()" style="color:#fff;border-color:#fff;background:rgba(255,255,255,.15)">← رجوع</button>
+          ${isMgr()?`<button class="btn g sm" onclick="openStaffEditMod(${ui.sdOpen})" style="color:#fff">✏️ تعديل</button>`:''}
           <div class="sd-av" style="width:48px;height:48px;font-size:18px">${av}</div>
           <div>
             <div style="font-weight:700;font-size:16px">${esc(p.name)}</div>
@@ -3214,7 +3214,7 @@ function pStaffData(){
           </div></div>
 
         </div>
-      </div>`;
+      </div>\`;
     }
   }
 
@@ -3239,6 +3239,28 @@ function pStaffData(){
 
 
 
+
+function openStaffEditMod(idx){
+  const p = STAFF_DATA[idx];
+  if(!p) return;
+  const html = `<div class="mod-body" style="display:flex;flex-direction:column;gap:12px">
+    <div class="fld"><label>الاسم</label><input id="se-name" value="${esc(p.name||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
+    <div class="fld"><label>الجوال</label><input id="se-phone" value="${esc(p.phone||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
+    <div class="fld"><label>البريد</label><input id="se-email" value="${esc(p.email||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
+    <div class="fld"><label>رقم الهوية</label><input id="se-nid" value="${esc(p.nid||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
+    <div class="fld"><label>تاريخ الميلاد</label><input id="se-birth" value="${esc(p.birth_m||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
+    <div class="fld"><label>الدرجة العلمية</label><input id="se-degree" value="${esc(p.degree||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
+    <div class="fld"><label>رقم الآيبان</label><input id="se-iban" value="${esc(p.iban||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
+    <div class="fld"><label>البنك</label><input id="se-bank" value="${esc(p.bank||'')}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
+    <div class="fld"><label>المكافأة الشهرية (ريال)</label><input id="se-salary" type="number" value="${esc(String(p.salary||''))}" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>
+  </div>
+  <div class="mod-foot">
+    <button class="btn g" onclick="saveStaffEdit(${idx})">💾 حفظ</button>
+    <button class="btn o" onclick="closeMod()">إلغاء</button>
+  </div>`;
+  openMod('تعديل بيانات ' + p.name, html);
+}
+
 function saveStaffEdit(idx){
   if(idx===null||idx===undefined) return;
   const p = STAFF_DATA[idx];
@@ -3254,7 +3276,7 @@ function saveStaffEdit(idx){
   p.salary = document.getElementById('se-salary')?.value?.trim() || p.salary;
   // حفظ في localStorage
   try { localStorage.setItem('maher_staff_edits', JSON.stringify(STAFF_DATA)); } catch(e){}
-  ui.sdEdit = false;
+  closeMod();
   flash('تم حفظ بيانات ' + p.name + ' بنجاح.', 'ok');
   render();
 }
@@ -3557,11 +3579,11 @@ function pTasks(){
     ${(()=>{
       const totalScore=tasks.reduce((a,t)=>{const k=myId+'_'+t.id+'_'+today;const d=S.taskDone?.[k];return a+(d&&d.score?d.score:0);},0);
       const maxScore=tasks.reduce((a,t)=>a+(t.score||1),0);
-      return totalScore>0?`<div class="pad" style="background:var(--gold-3);border-bottom:1px solid var(--gold-2);display:flex;align-items:center;gap:12px">
-        <span style="font-size:13px;font-weight:700">درجاتك اليوم:</span>
-        <span style="font-size:20px;font-weight:700;color:var(--gold)">${totalScore}</span>
-        <span style="font-size:13px;color:var(--muted)">من ${maxScore}</span>
-      </div>`:'';
+      if(!totalScore) return '';
+      return '<div class="pad" style="background:var(--gold-3);border-bottom:1px solid var(--gold-2);display:flex;align-items:center;gap:12px">' +
+        '<span style="font-size:13px;font-weight:700">درجاتك اليوم:</span>' +
+        '<span style="font-size:20px;font-weight:700;color:var(--gold)">' + totalScore + '</span>' +
+        '<span style="font-size:13px;color:var(--muted)">من ' + maxScore + '</span></div>';
     })()}
     ${freqOrder.filter(f=>grouped[f].length).map(f=>`
       <div style="margin:0 0 4px"><div style="background:var(--navy);color:#fff;padding:9px 16px;font-weight:700;font-size:13px">
