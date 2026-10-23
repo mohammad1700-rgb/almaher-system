@@ -1502,22 +1502,27 @@ function pWeekly(){
       html+='<div style="margin-bottom:2px"><button data-sid="'+sid+'" data-key="p_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:'+(portal?'#c62828':'#fff')+';color:'+(portal?'#fff':'inherit')+'">'+(portal?'+ ':'')+'بوابة</button></div>';
       html+='<div style="margin-bottom:2px"><button data-sid="'+sid+'" data-key="w_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:'+(ws?'#e65100':'#fff')+';color:'+(ws?'#fff':'inherit')+'">'+(ws?'+ ':'')+'واتساب</button></div>';
       if(isTasmee){html+='<div><button data-sid="'+sid+'" data-key="a_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:'+(ab?'#1565c0':'#fff')+';color:'+(ab?'#fff':'inherit')+'">'+(ab?'+ ':'')+'غياب</button></div>';}
-      if(d.dayIdx!==5){
-        var planKey='plan_'+d.date;
-        var planOn=!!(fl[planKey]);
-        var planCount=fl[planKey+'_count']||'';
-        html+='<div style="margin-top:2px">';
-        html+='<button data-sid="'+sid+'" data-key="'+planKey+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:'+(planOn?'#7b1fa2':'#fff')+';color:'+(planOn?'#fff':'inherit')+'">'+(planOn?'+ ':'')+'خطة</button>';
-        if(planOn){
-          html+='<input type="number" min="0" max="30" value="'+planCount+'" placeholder="واجبات" data-sid="'+sid+'" data-date="'+d.date+'" onchange="setPlanCount(this)" style="width:50px;font-size:10px;padding:2px 4px;border:1px solid #ccc;border-radius:4px;margin-right:2px">';
-        }
         html+='</div>';
       }
       html+='</td>';
     });
 
-    var planDays=Object.keys(fl).filter(function(k){return k.startsWith('plan_');}).length;
-    html+='<td style="text-align:center;font-size:12px">'+(planDays>0?'<span style="color:#c62828;font-weight:700">'+planDays+'</span>':'<span style="color:var(--ok)">✓</span>')+'</td>';
+    var planDone=fl['plan_done'];
+    var planTakhaluf=fl['plan_takhaluf']||0;
+    html+='<td style="text-align:center;padding:6px;vertical-align:middle">';
+    if(planDone===undefined){
+      html+='<div style="font-size:11px;margin-bottom:3px;color:var(--muted)">الخطة</div>';
+      html+='<button data-sid="'+sid+'" data-key="plan_done_yes" onclick="setPlan(this)" style="font-size:10px;padding:2px 6px;border:1px solid #2e7d32;border-radius:4px;cursor:pointer;background:#fff;color:#2e7d32;margin-left:2px">✓ مكتملة</button>';
+      html+='<button data-sid="'+sid+'" data-key="plan_done_no" onclick="setPlan(this)" style="font-size:10px;padding:2px 6px;border:1px solid #c62828;border-radius:4px;cursor:pointer;background:#fff;color:#c62828">✗ تعثر</button>';
+    } else if(planDone==='yes'){
+      html+='<span style="color:#2e7d32;font-weight:700">✓ مكتملة</span><br>';
+      html+='<button data-sid="'+sid+'" data-key="plan_reset" onclick="setPlan(this)" style="font-size:9px;padding:1px 4px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:#fff;color:var(--muted)">تعديل</button>';
+    } else {
+      html+='<span style="color:#c62828;font-weight:700">✗ تعثر</span><br>';
+      html+='<input type="number" min="1" max="6" value="'+planTakhaluf+'" placeholder="أيام" data-sid="'+sid+'" onchange="setPlanDays(this)" style="width:45px;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:4px;text-align:center"> يوم<br>';
+      html+='<button data-sid="'+sid+'" data-key="plan_reset" onclick="setPlan(this)" style="font-size:9px;padding:1px 4px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:#fff;color:var(--muted)">تعديل</button>';
+    }
+    html+='</td>';
     html+='</tr>';
   });
 
@@ -1538,6 +1543,27 @@ function tdf(btn){
     S.flags[WEEK][sid][key+'_at']=Date.now();
   }
   save(); render();
+}
+
+function setPlan(btn){
+  var sid=+btn.dataset.sid, key=btn.dataset.key;
+  var st=S.students.find(function(x){return x.id===sid;});
+  if(!st||!ownsStudent(st)) return say('لا تملك الرصد على هذا الطالب.');
+  if(!S.flags[WEEK]) S.flags[WEEK]={};
+  if(!S.flags[WEEK][sid]) S.flags[WEEK][sid]={};
+  if(key==='plan_done_yes') S.flags[WEEK][sid]['plan_done']='yes';
+  else if(key==='plan_done_no') S.flags[WEEK][sid]['plan_done']='no';
+  else if(key==='plan_reset') delete S.flags[WEEK][sid]['plan_done'];
+  save(); render();
+}
+function setPlanDays(inp){
+  var sid=+inp.dataset.sid;
+  var st=S.students.find(function(x){return x.id===sid;});
+  if(!st||!ownsStudent(st)) return;
+  if(!S.flags[WEEK]) S.flags[WEEK]={};
+  if(!S.flags[WEEK][sid]) S.flags[WEEK][sid]={};
+  S.flags[WEEK][sid]['plan_takhaluf']=+inp.value;
+  save();
 }
 function setPlanCount(inp){
   var sid=+inp.dataset.sid, date=inp.dataset.date;
