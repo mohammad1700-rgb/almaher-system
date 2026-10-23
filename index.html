@@ -1502,6 +1502,17 @@ function pWeekly(){
       html+='<div style="margin-bottom:2px"><button data-sid="'+sid+'" data-key="p_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:'+(portal?'#c62828':'#fff')+';color:'+(portal?'#fff':'inherit')+'">'+(portal?'+ ':'')+'بوابة</button></div>';
       html+='<div style="margin-bottom:2px"><button data-sid="'+sid+'" data-key="w_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:'+(ws?'#e65100':'#fff')+';color:'+(ws?'#fff':'inherit')+'">'+(ws?'+ ':'')+'واتساب</button></div>';
       if(isTasmee){html+='<div><button data-sid="'+sid+'" data-key="a_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:'+(ab?'#1565c0':'#fff')+';color:'+(ab?'#fff':'inherit')+'">'+(ab?'+ ':'')+'غياب</button></div>';}
+      if(d.dayIdx!==5){
+        var planKey='plan_'+d.date;
+        var planOn=!!(fl[planKey]);
+        var planCount=fl[planKey+'_count']||'';
+        html+='<div style="margin-top:2px">';
+        html+='<button data-sid="'+sid+'" data-key="'+planKey+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:'+(planOn?'#7b1fa2':'#fff')+';color:'+(planOn?'#fff':'inherit')+'">'+(planOn?'+ ':'')+'خطة</button>';
+        if(planOn){
+          html+='<input type="number" min="0" max="30" value="'+planCount+'" placeholder="واجبات" data-sid="'+sid+'" data-date="'+d.date+'" onchange="setPlanCount(this)" style="width:50px;font-size:10px;padding:2px 4px;border:1px solid #ccc;border-radius:4px;margin-right:2px">';
+        }
+        html+='</div>';
+      }
       html+='</td>';
     });
 
@@ -1527,6 +1538,15 @@ function tdf(btn){
     S.flags[WEEK][sid][key+'_at']=Date.now();
   }
   save(); render();
+}
+function setPlanCount(inp){
+  var sid=+inp.dataset.sid, date=inp.dataset.date;
+  var st=S.students.find(function(x){return x.id===sid;});
+  if(!st||!ownsStudent(st)) return;
+  if(!S.flags[WEEK]) S.flags[WEEK]={};
+  if(!S.flags[WEEK][sid]) S.flags[WEEK][sid]={};
+  S.flags[WEEK][sid]['plan_'+date+'_count']=+inp.value;
+  save();
 }
 
 function toggleDayFlag(sid,key){
