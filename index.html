@@ -694,7 +694,7 @@ function bar(p){ if(p===null) return '';
   return `<div class="bar"><i class="${p>=90?'hi':(p<50?'lo':'')}" style="width:${Math.max(2,Math.min(100,p))}%"></i></div>`; }
 function stat(k,v,acc,target,extra){
   const go = target ? ` onclick="go('${target}'${extra?','+extra:''})" role="button" tabindex="0"
-    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('${target}'${extra?','+extra:''})}"` : '';
+    onkeydown="if((event.key==='Enter'||event.key===' ')&&!event.target.matches('input,textarea,select')){event.preventDefault();go('${target}'${extra?','+extra:''})}"` : '';
   return `<div class="stat ${acc?'acc':''}${target?' go':''}"${go}><div class="k">${esc(k)}</div><div class="v">${v}</div>${target?'<span class="arw">‹</span>':''}</div>`;
 }
 </script>
