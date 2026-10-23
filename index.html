@@ -3329,12 +3329,25 @@ function pHonorBoard(){
   const sec=curSec();
   const fols=S.people.filter(p=>p.active&&(p.section===sec||sec==='all')&&p.role.startsWith('متابع'));
   if(!fols.length) return '';
-  let scored=fols.map(p=>{
-    const rows=reportRows(WEEK,p.id);
-    const done=rows.filter(r=>r.done);
-    return {p,score:done.length?done.reduce((a,r)=>a+r.pct,0)/done.length:0};
-  }).sort((a,b)=>b.score-a.score).slice(0,3);
-  if(!scored.some(x=>x.score>0)) scored=fols.slice(0,3).map(p=>({p,score:null}));
+  
+  // البحث عن آخر أسبوع معتمد
+  const approvals=S.approvals||{};
+  const weeks=Object.keys(approvals).sort((a,b)=>b-a);
+  let lastWeek=null;
+  for(const w of weeks){
+    if(Object.keys(approvals[w]||{}).length>0){lastWeek=w;break;}
+  }
+  
+  let scored;
+  if(lastWeek){
+    scored=fols.map(p=>{
+      const rows=reportRows(lastWeek,p.id);
+      const done=rows.filter(r=>r.done);
+      return {p,score:done.length?done.reduce((a,r)=>a+r.pct,0)/done.length:0};
+    }).sort((a,b)=>b.score-a.score).slice(0,3);
+  } else {
+    scored=fols.slice(0,3).map(p=>({p,score:null}));
+  }
   if(!scored.length) return '';
   const medals=['🥇','🥈','🥉'],ranks=['الأول','الثاني','الثالث'];
   return '<div style="background:linear-gradient(135deg,#1a2340,#2d3a6b);color:#fff;border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">'
