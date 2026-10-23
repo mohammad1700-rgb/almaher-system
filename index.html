@@ -1461,76 +1461,109 @@ function pWeekly(){
   if(!rows.length) return weekBar('weekly')+'<div class="card"><div class="none">لا يوجد طلاب.</div></div>';
   const DAY_NAMES=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
   const now=new Date();
+  // اليوم النشط = أمس
+  const yesterday=new Date(now); yesterday.setDate(now.getDate()-1);
+  const activeDate=yesterday.toISOString().slice(0,10);
   const weekStart=new Date(now); weekStart.setDate(now.getDate()-now.getDay());
   const days=Array.from({length:7},function(_,i){
     const d=new Date(weekStart); d.setDate(weekStart.getDate()+i);
     return {label:DAY_NAMES[i]+' '+d.getDate()+'/'+(d.getMonth()+1), date:d.toISOString().slice(0,10), dayIdx:i};
   });
-  const today=now.toISOString().slice(0,10);
-  // خانة الخطة تُفتح بعد الأحد 12 ليلاً حتى الاثنين 1 ظهراً
-  const planNow=new Date();
-  const planDay=planNow.getDay(), planH=planNow.getHours();
+  // نافذة الخطة: الأحد بعد 12م حتى الاثنين 1ظ
+  const planDay=now.getDay(), planH=now.getHours();
   const planWindowOpen=(planDay===0&&planH>=0)||(planDay===1&&planH<13);
+
   let html=weekBar('weekly')+'<div class="card"><h2>الإدخال اليومي</h2>'
-    +'<div class="tw" style="overflow-x:auto"><table class="d" style="min-width:900px"><thead><tr>'
+    +'<div class="pad" style="background:var(--cream);border-bottom:1px solid var(--gold-2);font-size:12px;color:var(--muted)">📅 يظهر <b>أمس</b> كاليوم النشط للإدخال</div>'
+    +'<div class="tw" style="overflow-x:auto"><table class="d" style="min-width:1100px"><thead><tr>'
     +'<th style="text-align:right;min-width:160px">الطالب</th>';
   days.forEach(function(d){
-    const isToday=d.date===today;
-    html+='<th style="text-align:center;font-size:11px;min-width:130px'+(isToday?';background:var(--gold-3)':'')+'">'
-      +d.label
+    const isActive=d.date===activeDate;
+    html+='<th style="text-align:center;font-size:11px;min-width:140px'+(isActive?';background:var(--gold-3);border:2px solid var(--gold)':'')+'">'
+      +d.label+(isActive?' 📌':'')
       +(d.dayIdx!==5?'<br><button onclick="fillDay(''+d.date+'')" style="font-size:9px;padding:1px 6px;border:1px solid var(--gold);border-radius:4px;cursor:pointer;background:var(--gold-3);color:var(--navy);margin-top:3px">✓ تعبئة الكل</button>':'')
       +'</th>';
   });
-  html+='<th style="min-width:120px">الخطة</th></tr></thead><tbody>';
+  html+='<th style="min-width:130px">الخطة<br>'
+    +(planWindowOpen?'<button onclick="fillAllPlan()" style="font-size:9px;padding:1px 6px;border:1px solid #2e7d32;border-radius:4px;cursor:pointer;background:#e8f5e9;color:#2e7d32;margin-top:3px">✓ تعبئة الكل</button>':'<span style="font-size:9px;color:var(--muted)">يُفتح الأحد 12م</span>')
+    +'</th></tr></thead><tbody>';
+
   rows.forEach(function(r){
     const sid=r.s.id;
     const fl=(S.flags&&S.flags[WEEK]&&S.flags[WEEK][sid])||{};
     const circle=S.circles.find(function(c){return c.id===r.s.cid;});
     const circleDays=circle&&circle.days?circle.days:'';
-    html+='<tr><td style="font-weight:600;white-space:nowrap">'+esc(r.s.name)+'</td>';
+    
+    // حساب التنبيهات
+    const warnPortal=Object.keys(fl).filter(function(k){return k.startsWith('p_')&&!k.endsWith('_at');}).length;
+    const warnWs=Object.keys(fl).filter(function(k){return k.startsWith('w_')&&!k.endsWith('_at');}).length;
+    const warnMuraja=Object.keys(fl).filter(function(k){return k.startsWith('m_')&&!k.endsWith('_at');}).length;
+    const warnAbs=Object.keys(fl).filter(function(k){return k.startsWith('a_')&&!k.endsWith('_at');}).length;
+    const warnResp=Object.keys(fl).filter(function(k){return k.startsWith('r_')&&!k.endsWith('_at');}).length;
+    const totalWarnSend=warnPortal+warnWs+warnMuraja;
+    const indharSend=Math.floor(totalWarnSend/6);
+    const indharAbs=Math.floor(warnAbs/3);
+    const indharResp=Math.floor(warnResp/2);
+    const totalIndhar=indharSend+indharAbs+indharResp;
+
+    html+='<tr><td style="vertical-align:top;padding:6px">'
+      +'<div style="font-weight:600">'+esc(r.s.name)+'</div>'
+      +'<div style="font-size:10px;margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">'
+      +(totalWarnSend>0?'<span style="background:#fff3e0;color:#e65100;border-radius:4px;padding:1px 5px">إشعار: '+totalWarnSend+'⚠️</span>':'')
+      +(warnAbs>0?'<span style="background:#fce4ec;color:#c62828;border-radius:4px;padding:1px 5px">غياب: '+warnAbs+'⚠️</span>':'')
+      +(warnResp>0?'<span style="background:#f3e5f5;color:#6a1b9a;border-radius:4px;padding:1px 5px">تجاوب: '+warnResp+'⚠️</span>':'')
+      +(totalIndhar>0?'<span style="background:#c62828;color:#fff;border-radius:4px;padding:1px 5px;font-weight:700">إنذار: '+totalIndhar+'</span>':'')
+      +'</div></td>';
+
     days.forEach(function(d){
-      const isToday=d.date===today;
+      const isActive=d.date===activeDate;
       const isTasmee=circleDays==='يوميا'||circleDays.indexOf(DAY_NAMES[d.dayIdx])>=0;
       const isFriday=d.dayIdx===5;
       const portal=!!(fl['p_'+d.date]);
       const ws=!!(fl['w_'+d.date]);
+      const muraja=!!(fl['m_'+d.date]);
       const ab=isTasmee&&!!(fl['a_'+d.date]);
-      const bg=isToday?'background:var(--gold-3);':'';
-      html+='<td style="'+bg+'padding:4px;vertical-align:top">';
+      const resp=!!(fl['r_'+d.date]);
+      const bg=isActive?'background:var(--gold-3);border:1px solid var(--gold);':'';
+      html+='<td style="'+bg+'padding:3px;vertical-align:top">';
       if(!isFriday){
-        html+='<div style="margin-bottom:2px"><button data-sid="'+sid+'" data-key="p_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;white-space:nowrap;background:'+(portal?'#c62828':'#fff')+';color:'+(portal?'#fff':'inherit')+'">'+(portal?'✓ ':'')+'عدم الإتمام (بوابة)</button></div>';
-        html+='<div style="margin-bottom:2px"><button data-sid="'+sid+'" data-key="w_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;white-space:nowrap;background:'+(ws?'#e65100':'#fff')+';color:'+(ws?'#fff':'inherit')+'">'+(ws?'✓ ':'')+'عدم الإرسال (واتساب)</button></div>';
+        html+='<div style="margin-bottom:1px"><button data-sid="'+sid+'" data-key="p_'+d.date+'" onclick="tdf(this)" style="font-size:9px;padding:1px 4px;border:1px solid #ccc;border-radius:3px;cursor:pointer;width:100%;background:'+(portal?'#c62828':'#fff')+';color:'+(portal?'#fff':'inherit')+'">'+(portal?'✓ ':'')+'عدم الإتمام (بوابة)</button></div>';
+        html+='<div style="margin-bottom:1px"><button data-sid="'+sid+'" data-key="w_'+d.date+'" onclick="tdf(this)" style="font-size:9px;padding:1px 4px;border:1px solid #ccc;border-radius:3px;cursor:pointer;width:100%;background:'+(ws?'#e65100':'#fff')+';color:'+(ws?'#fff':'inherit')+'">'+(ws?'✓ ':'')+'عدم الإرسال (واتساب)</button></div>';
+        html+='<div style="margin-bottom:1px"><button data-sid="'+sid+'" data-key="m_'+d.date+'" onclick="tdf(this)" style="font-size:9px;padding:1px 4px;border:1px solid #ccc;border-radius:3px;cursor:pointer;width:100%;background:'+(muraja?'#7b1fa2':'#fff')+';color:'+(muraja?'#fff':'inherit')+'">'+(muraja?'✓ ':'')+'عدم الإشعار (مراجعة)</button></div>';
       }
       if(isTasmee){
-        html+='<div><button data-sid="'+sid+'" data-key="a_'+d.date+'" onclick="tdf(this)" style="font-size:10px;padding:2px 5px;border:1px solid #ccc;border-radius:4px;cursor:pointer;white-space:nowrap;background:'+(ab?'#1565c0':'#fff')+';color:'+(ab?'#fff':'inherit')+'">'+(ab?'✓ ':'')+'الغياب عن التسميع</button></div>';
+        html+='<div style="margin-bottom:1px"><button data-sid="'+sid+'" data-key="a_'+d.date+'" onclick="tdf(this)" style="font-size:9px;padding:1px 4px;border:1px solid #ccc;border-radius:3px;cursor:pointer;width:100%;background:'+(ab?'#1565c0':'#fff')+';color:'+(ab?'#fff':'inherit')+'">'+(ab?'✓ ':'')+'الغياب عن التسميع</button></div>';
       }
+      html+='<div><button data-sid="'+sid+'" data-key="r_'+d.date+'" onclick="tdf(this)" style="font-size:9px;padding:1px 4px;border:1px solid #ccc;border-radius:3px;cursor:pointer;width:100%;background:'+(resp?'#4a148c':'#fff')+';color:'+(resp?'#fff':'inherit')+'">'+(resp?'✓ ':'')+'عدم التجاوب</button></div>';
       html+='</td>';
     });
+
     // خانة الخطة
     const planDone=fl['plan_done'];
     const planDays2=fl['plan_takhaluf']||'';
-    html+='<td style="text-align:center;padding:6px;vertical-align:middle">';
+    html+='<td style="text-align:center;padding:4px;vertical-align:middle">';
     if(planDone===undefined){
       if(!planWindowOpen){
-        html+='<span style="font-size:11px;color:var(--muted)">يُفتح الأحد</span>';
+        html+='<span style="font-size:10px;color:var(--muted)">يُفتح الأحد</span>';
       } else {
-      html+='<div style="font-size:10px;color:var(--muted);margin-bottom:4px">التخلف عن الخطة</div>';
-      html+='<button data-sid="'+sid+'" data-key="plan_done_yes" onclick="setPlan(this)" style="font-size:10px;padding:2px 5px;border:1px solid #2e7d32;border-radius:4px;cursor:pointer;background:#fff;color:#2e7d32;display:block;width:100%;margin-bottom:2px">✓ مكتملة</button>';
-      html+='<button data-sid="'+sid+'" data-key="plan_done_no" onclick="setPlan(this)" style="font-size:10px;padding:2px 5px;border:1px solid #c62828;border-radius:4px;cursor:pointer;background:#fff;color:#c62828;display:block;width:100%">✗ تعثر</button>';
+        html+='<button data-sid="'+sid+'" data-key="plan_done_yes" onclick="setPlan(this)" style="font-size:10px;padding:2px 5px;border:1px solid #2e7d32;border-radius:4px;cursor:pointer;background:#fff;color:#2e7d32;display:block;width:100%;margin-bottom:2px">✓ مكتملة</button>';
+        html+='<button data-sid="'+sid+'" data-key="plan_done_no" onclick="setPlan(this)" style="font-size:10px;padding:2px 5px;border:1px solid #c62828;border-radius:4px;cursor:pointer;background:#fff;color:#c62828;display:block;width:100%">✗ تعثر</button>';
       }
     } else if(planDone==='yes'){
-      html+='<span style="color:#2e7d32;font-weight:700">✓ مكتملة</span><br>';
+      html+='<span style="color:#2e7d32;font-weight:700;font-size:12px">✓ مكتملة</span><br>';
       html+='<button data-sid="'+sid+'" data-key="plan_reset" onclick="setPlan(this)" style="font-size:9px;padding:1px 4px;border:1px solid #ccc;border-radius:4px;cursor:pointer;color:var(--muted)">تعديل</button>';
     } else {
-      html+='<span style="color:#c62828;font-weight:700">✗ تعثر</span><br>';
-      html+='<input type="number" min="1" max="6" value="'+planDays2+'" placeholder="أيام" data-sid="'+sid+'" onchange="setPlanDays(this)" style="width:45px;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:4px;text-align:center;direction:ltr"> يوم<br>';
+      html+='<span style="color:#c62828;font-weight:700;font-size:12px">✗ تعثر</span><br>';
+      html+='<input type="number" min="1" max="6" value="'+planDays2+'" placeholder="أيام" data-sid="'+sid+'" onchange="setPlanDays(this)" style="width:40px;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:4px;text-align:center;direction:ltr"> يوم<br>';
       html+='<button data-sid="'+sid+'" data-key="plan_reset" onclick="setPlan(this)" style="font-size:9px;padding:1px 4px;border:1px solid #ccc;border-radius:4px;cursor:pointer;color:var(--muted)">تعديل</button>';
     }
     html+='</td></tr>';
   });
+
   html+='</tbody></table></div></div>';
   return html;
 }
+
 function fillAllPlan(){
   const fid=curFid(); if(!fid) return;
   const rows=reportRows(WEEK,fid);
