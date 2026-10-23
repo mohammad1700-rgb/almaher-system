@@ -763,7 +763,7 @@ const PAGES = () => ({
   staffdata:['بيانات الطاقم الإداري والتعليمي', isMgr()],
   suggestions:['الاقتراحات والشكاوى', true],
   ranking:['التقييم والترتيب', isMgr()],
-  allhourly:['تقرير الساعة الأسبوعية', isMgr()||me()?.role==='branch_sup'||me()?.role==='women_sup'],
+  allhourly:['تقرير الساعة الأسبوعية', true],
   tasks:['مهامي ومسؤولياتي', true],
   stats:['الإحصاءات الشاملة', isMgr()],
   activity: ['نشاط المتابعين', isMgr()],
@@ -771,7 +771,7 @@ const PAGES = () => ({
   students:['الطلاب', true],
   circles: ['الحلقات', true],
   weekly:  ['جدول المتابعة', true],
-  report:  ['التقرير الأسبوعي', true],   /* يضم تقرير الساعة */
+  report:  ['التقرير الأسبوعي', false],   /* مخفي - يضم تقرير الساعة */
   dist:    ['توزيع الطلاب على الحلق', isMgr() || ['student_affairs','women_affairs','women_sup'].includes(me()?.role)],
   top:     ['الأوائل', true],
   hourly:  ['تقرير الساعة', false],
@@ -3489,8 +3489,41 @@ function pRanking(){
 function pAllHourly(){
   const myRole=me()?.role||'';
   const myName=me()?.name||'';
-  const canView=isMgr()||myRole==='branch_sup'||myRole==='women_sup'||myName.includes('نورة السيف');
-  if(!canView) return '<div class="card"><div class="none">هذه الصفحة للمدير والمشرفين فقط.</div></div>';
+  const isSuper=isMgr()||myRole==='branch_sup'||myRole==='women_sup'||myName.includes('نورة السيف');
+  const myPid=myPid();
+  // المتابع يرى تقرير مجموعته فقط
+  if(!isSuper){
+    const myFol=S.people.find(p=>p.id===myPid);
+    if(!myFol) return '<div class="card"><div class="none">لا توجد مجموعة.</div></div>';
+    const rows=reportRows(WEEK,myPid);
+    if(!rows.length) return weekBar('allhourly')+'<div class="card"><div class="none">لا توجد بيانات لهذا الأسبوع.</div></div>';
+    const late=[],portal=[],abs=[],plan=[];
+    rows.forEach(r=>{
+      const fl=S.flags?.[WEEK]?.[r.s.id]||{};
+      if(r.q.l||fl.send_ws)late.push(r.s.name);
+      if(fl.send_portal)portal.push(r.s.name);
+      if(r.q.a||fl.abs)abs.push(r.s.name);
+      if(r.sh.days||fl.plan||(r.plan!==null&&r.plan!==''&&+r.plan<r.quota))plan.push(r.s.name);
+    });
+    const ontime=calcOnTimeScore(WEEK,myPid);
+    const disc=Math.max(0,100-(late.length/rows.length)*10-(portal.length/rows.length)*10-(abs.length/rows.length)*30-(plan.length/rows.length)*30-(20-ontime));
+    const ap=S.approvals?.[WEEK]?.[myPid];
+    return weekBar('allhourly')
+      +'<div class="card"><h2>تقرير الساعة الأسبوعية — '+esc(myFol.name)+'</h2>'
+      +'<div class="pad" style="background:var(--cream);border-bottom:1px solid var(--gold-2)">'+
+      '<div style="display:flex;gap:20px;flex-wrap:wrap">'
+      +'<div><div style="font-size:11px;color:var(--muted)">الطلاب</div><b>'+rows.length+'</b></div>'
+      +'<div><div style="font-size:11px;color:var(--muted)">واتساب</div><b style="color:#e65100">⚠️ '+late.length+'</b></div>'
+      +'<div><div style="font-size:11px;color:var(--muted)">بوابة</div><b style="color:#e65100">📋 '+portal.length+'</b></div>'
+      +'<div><div style="font-size:11px;color:var(--muted)">المتغيبون</div><b style="color:#c62828">❌ '+abs.length+'</b></div>'
+      +'<div><div style="font-size:11px;color:var(--muted)">الخطة</div><b style="color:#1565c0">📉 '+plan.length+'</b></div>'
+      +'<div><div style="font-size:11px;color:var(--muted)">النسبة</div><b style="font-size:20px;color:var(--gold)">'+n1(disc)+'٪</b></div>'
+      +'<div><div style="font-size:11px;color:var(--muted)">التوقيت</div><b style="color:var(--ok)">'+ontime+'٪</b></div>'
+      +'</div></div>'
+      +(ap?'<div class="pad" style="background:#e8f5e9;color:#2e7d32;font-weight:600">✅ تم اعتماد التقرير</div>'
+        :'<div class="pad"><button class="btn g" onclick="doApprove('+myPid+',reportRows(WEEK,'+myPid+'),null)">اعتماد التقرير</button></div>')
+      +'</div>';
+  }
   
   // توقيت الإدخال: الأحد=0 والاثنين=1 فقط
   const today=new Date().getDay();
