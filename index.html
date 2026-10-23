@@ -3014,6 +3014,11 @@ function loginView(){
 
 function render(){
   if(!SESSION){ $('app').innerHTML = loginView(); return; }
+  /* حفظ التركيز قبل الرسم */
+  const _focused = document.activeElement;
+  const _focusedId = _focused && _focused.id ? _focused.id : null;
+  const _selStart = _focused && _focused.selectionStart !== undefined ? _focused.selectionStart : null;
+  const _selEnd = _focused && _focused.selectionEnd !== undefined ? _focused.selectionEnd : null;
   const P = PAGES();
   if(!P[PAGE] || !P[PAGE][1]) PAGE='home';
   const body = ({home:pHome,people:pPeople,students:pStudents,circles:pCircles,weekly:pWeekly,
@@ -3041,6 +3046,8 @@ function render(){
     <div class="foot">جمعية الماهر القرآنية — برنامج الحفظ والتثبيت</div></div>
   ${tabbar()}`;
   femize($('app'));
+  /* استعادة التركيز لحقل البحث بعد الرسم */
+  if(_focusedId){requestAnimationFrame(()=>{const el=document.getElementById(_focusedId);if(el&&el.tagName==='INPUT'){el.focus();if(_selStart!==null){try{el.setSelectionRange(_selStart,_selEnd);}catch(e){}}}}); }
 }
 const ICO = {
  home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
