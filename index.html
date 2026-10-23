@@ -3072,7 +3072,7 @@ function pStaffData(){
     const init = p.name.trim().split(' ').filter(Boolean);
     const av = init.length>=2 ? init[0][0]+(init[init.length-1][0]||'') : init[0]?.[0]||'؟';
     const rc = p.role&&p.role.includes('مشرف')?'x':p.role&&p.role.includes('متابع')?'r':'m';
-    return `<div class="sd-card" onclick="ui.sdOpen=${JSON.stringify(JSON.stringify(p))};render()">
+    return `<div class="sd-card" onclick="openStaffCard(${STAFF_DATA.indexOf(p)});render()">
       <div class="sd-ch">
         <div class="sd-av">${av}</div>
         <div style="flex:1">
@@ -3085,9 +3085,9 @@ function pStaffData(){
   }
 
   // Detail view
-  if(ui.sdOpen) {
+  if(ui.sdOpen !== null && ui.sdOpen !== undefined) {
     let p;
-    try { p = JSON.parse(ui.sdOpen); } catch(e) { p = null; }
+    try { p = typeof ui.sdOpen === 'number' ? STAFF_DATA[ui.sdOpen] : JSON.parse(ui.sdOpen); } catch(e) { p = null; }
     if(p) {
       const init = p.name.trim().split(' ').filter(Boolean);
       const av = init.length>=2 ? init[0][0]+(init[init.length-1][0]||'') : init[0]?.[0]||'؟';
@@ -3174,6 +3174,11 @@ function pStaffData(){
 }
 
 
+
+
+function openStaffCard(idx){
+  ui.sdOpen = idx;
+}
 
 function filterStaff(q){
   q = (q||'').trim().toLowerCase();
