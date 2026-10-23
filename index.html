@@ -1476,7 +1476,7 @@ function pWeekly(){
   let html=weekBar('weekly')+'<div class="card"><h2>الإدخال اليومي</h2>'
     +'<div class="pad" style="background:var(--cream);border-bottom:1px solid var(--gold-2);font-size:12px">'
     +'📅 الإدخال متاح ليوم <b>أمس فقط</b> ('+(DAY_NAMES[activeDayIdx]+' '+activeDate)+')'
-    +'<button onclick="fillDay(''+activeDate+'')" style="margin-right:12px;font-size:11px;padding:3px 10px;border:1px solid var(--gold);border-radius:6px;cursor:pointer;background:var(--gold);color:#fff">✓ تعبئة الكل لأمس</button>'
+    +'<button data-date="'+activeDate+'" onclick="fillDay(this.dataset.date)" style="margin-right:12px;font-size:11px;padding:3px 10px;border:1px solid var(--gold);border-radius:6px;cursor:pointer;background:var(--gold);color:#fff">✓ تعبئة الكل لأمس</button>'
     +'</div>'
     +'<div class="tw" style="overflow-x:auto"><table class="d" style="min-width:1000px"><thead><tr>'
     +'<th style="text-align:right;min-width:160px">الطالب</th>';
