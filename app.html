@@ -3373,7 +3373,7 @@ function pSuggestions(){
     +(isAdmin?'<th>إجراء</th>':'')+'</tr></thead><tbody>'
     +list.map((s,i)=>'<tr><td>'+(i+1)+'</td>'
       +'<td><span class="tag '+(s.type==='complaint'?'dz':'g')+'">'+(s.type==='complaint'?'شكوى':'مقترح')+'</span></td>'
-      +'<td class="nm">'+esc(s.title||'')+(s.img?'<br><a href="'+s.img+'" target="_blank"><img src="'+s.img+'" style="max-width:80px;max-height:60px;border-radius:6px;margin-top:4px"></a>':'')+'</td><td>'+esc(s.userName||'—')+'</td>'
+      +'<td class="nm" style="cursor:pointer" onclick="showSugDetail('+s.id+')">'+esc(s.title||'')+(s.img?'<br><a href="'+s.img+'" target="_blank"><img src="'+s.img+'" style="max-width:80px;max-height:60px;border-radius:6px;margin-top:4px"></a>':'')+'<div style="font-size:11px;color:var(--gold)">اضغط للتفاصيل</div></td><td>'+esc(s.userName||'—')+'</td>'
       +'<td style="font-size:11px">'+(s.date||'').slice(0,10)+'</td>'
       +'<td><b style="font-size:12px">'+(sl[s.status]||'جديد')+'</b></td>'
       +(isAdmin?'<td><select onchange="updateSugStatus('+s.id+',this.value)" style="font-size:12px;border:1px solid var(--line);border-radius:6px;padding:3px 6px">'
@@ -3383,6 +3383,32 @@ function pSuggestions(){
         +'</select></td>':'')
       +'</tr>').join('')
     +'</tbody></table></div>')+'</div>';
+}
+
+function showSugDetail(id){
+  const s=(S.suggestions||[]).find(x=>x.id===id);
+  if(!s) return;
+  const typeLabel=s.type==='complaint'?'شكوى':'مقترح';
+  const statusLabel={new:'جديد',processing:'قيد المعالجة',closed:'مغلق'};
+  openMod('تفاصيل الطلب',
+    '<div class="mod-body" style="display:flex;flex-direction:column;gap:12px">'
+    +'<div class="fld"><label>النوع</label><b>'+typeLabel+'</b></div>'
+    +'<div class="fld"><label>العنوان</label><b>'+esc(s.title||'')+'</b></div>'
+    +'<div class="fld"><label>التفاصيل</label><p style="white-space:pre-wrap;margin:0">'+esc(s.body||'لا يوجد')+'</p></div>'
+    +'<div class="fld"><label>مقدم الطلب</label>'+esc(s.userName||'—')+'</div>'
+    +'<div class="fld"><label>التاريخ</label>'+(s.date||'').slice(0,10)+'</div>'
+    +(s.img?'<div class="fld"><label>الصورة</label><a href="'+s.img+'" target="_blank"><img src="'+s.img+'" style="max-width:100%;border-radius:8px"></a></div>':'')
+    +'<div class="fld"><label>الحالة</label>'
+    +(isMgr()?'<select onchange="updateSugStatus('+id+',this.value);closeMod();render()" style="border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-family:var(--f)">'
+      +'<option value="new" '+(s.status==='new'?'selected':'')+'>جديد</option>'
+      +'<option value="processing" '+(s.status==='processing'?'selected':'')+'>قيد المعالجة</option>'
+      +'<option value="closed" '+(s.status==='closed'?'selected':'')+'>مغلق</option>'
+      +'</select>'
+      :(statusLabel[s.status]||'جديد'))
+    +'</div>'
+    +'</div>'
+    +'<div class="mod-foot"><button class="btn o" onclick="closeMod()">إغلاق</button></div>'
+  );
 }
 function submitSuggestion(){
   const title=document.getElementById('sug-title')?.value?.trim();
