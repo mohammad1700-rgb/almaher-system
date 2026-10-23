@@ -512,7 +512,46 @@ if (S.v !== SEEDV) {
   S.v = SEEDV;
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){}
 }
-S.evals ??= {}; S.noms ??= {}; S.hourly ??= {}; S.approvals ??= {};
+S.evals ??= {}; S.noms ??= {};
+/* تتبع نشاط المتابعين */
+(function(){
+  if(!window._actInit){
+    window._actInit = true;
+    let _lastActive = Date.now();
+    let _sessionStart = Date.now();
+    const IDLE_LIMIT = 5 * 60 * 1000; // 5 دقائق بدون تفاعل = غير نشط
+    
+    function saveActivity(){
+      try {
+        const uid = SESSION ? SESSION.id : null;
+        if(!uid) return;
+        const now = Date.now();
+        if(now - _lastActive > IDLE_LIMIT) { _sessionStart = now; }
+        const elapsed = Math.floor((now - _sessionStart) / 1000);
+        const today = new Date().toISOString().slice(0,10);
+        const week = Math.floor(Date.now()/(7*24*3600*1000));
+        const month = new Date().toISOString().slice(0,7);
+        
+        let act = {};
+        try { act = JSON.parse(localStorage.getItem('maher_act')||'{}'); } catch(e){}
+        if(!act[uid]) act[uid] = {};
+        act[uid].name = SESSION.name || '';
+        act[uid][today] = (act[uid][today]||0) + elapsed;
+        act[uid]['week_'+week] = (act[uid]['week_'+week]||0) + elapsed;
+        act[uid]['month_'+month] = (act[uid]['month_'+month]||0) + elapsed;
+        localStorage.setItem('maher_act', JSON.stringify(act));
+        _sessionStart = now;
+      } catch(e){}
+    }
+    
+    ['click','keydown','scroll','touchstart'].forEach(ev=>{
+      document.addEventListener(ev, ()=>{ _lastActive = Date.now(); }, {passive:true});
+    });
+    setInterval(saveActivity, 60000); // احفظ كل دقيقة
+    window.addEventListener('beforeunload', saveActivity);
+  }
+})();
+ S.hourly ??= {}; S.approvals ??= {}; S.pauseWeeks ??= {};
 S.marks ??= {}; S.scores ??= {}; S.actions ??= []; S.audit ??= []; S.students ??= []; S.autoLink ??= 1;
 S.nextS ??= 1; S.nextA ??= 1; S.flags ??= {};
 /* توحيد اسم حقل الختم بعد أن كان يُكتب باسمين */
@@ -554,7 +593,7 @@ function mySec(){ const r = me()?.role;
   return 'men'; }
 const myPid = () => me()?.pid ?? null;
 /* القسم المعروض: من يرى الجميع يختار، وغيره محبوس في قسمه */
-const SECS = {men:'قسم الرجال', women:'القسم النسائي', branch:'فرع حفر الباطن'};
+const SECS = {men:'قسم الرجال', women:'مشكاة', branch:'فرع حفر الباطن'};
 /* تأنيث نصوص القسم النسائي — يطبَّق على النصوص لا على القيم */
 const FEM = {
  'الطالب':'الطالبة','طالب':'طالبة','طالبا':'طالبة','الطلاب':'الطالبات','طلاب':'طالبات',
@@ -721,6 +760,7 @@ function stat(k,v,acc,target,extra){
 const PAGES = () => ({
   home:    ['لوحة البرنامج', true],
   staffdata:['بيانات الطاقم الإداري والتعليمي', isMgr()],
+  activity: ['نشاط المتابعين', isMgr()],
   people:  ['المتابعون', true],
   students:['الطلاب', true],
   circles: ['الحلقات', true],
@@ -1422,9 +1462,11 @@ function pWeekly(){
     <button class="btn ${ui.day==null?'':'o'} sm" onclick="ui.day=null;render()">الأسبوع كاملا</button>
     ${DAYS.map((x,i)=>`<button class="btn ${ui.day===i?'':'o'} sm" onclick="ui.day=${i};render()">${x}</button>`).join('')}
     <div class="sp"></div><button class="btn o sm" onclick="bulkOpen()">رصد جماعي</button>
+    ${isMgr()||can('teacher.edit')?`<button class="btn ${isPausedWeek(WEEK)?'g':'dz'} sm" onclick="togglePauseWeek(WEEK)">${isPausedWeek(WEEK)?'▶ استئناف الحفظ':'⏸ إيقاف الحفظ مؤقتاً'}</button>`:''}
   </div></div></div>`;
 
-  return weekBar('weekly') + chips + `<div class="stats">
+  const pauseBanner = isPausedWeek(WEEK) ? '<div class="msg warn" style="margin:0 0 12px">⏸ الحفظ موقوف مؤقتاً لهذا الأسبوع — لا يُحتسب على الطلاب غياب في خانة الحفظ.</div>' : '';
+  return weekBar('weekly') + chips + pauseBanner + `<div class="stats">
     ${stat('إجمالي الطلاب', rows.length)}
     ${stat('نسبة الالتزام والإنجاز', grd?n1(pts/grd*100)+'٪':'—', true)}
     ${stat('الملتزمون', ok)}${stat('متابعة عاجلة', urg)}${stat('المعتذرون', exc)}
@@ -1443,7 +1485,7 @@ function pWeekly(){
       return `<tr data-sid="${sid}"${t==='k'?' class="prow"':''}>
        ${first?`<td class="n" rowspan="3">${n+1}</td><td class="nm" rowspan="3">${esc(r.s.name)}</td>`:''}
        <td style="font-size:11.5px;font-weight:700;white-space:nowrap;color:${CLR[t]}">${LBL[t]}</td>
-       ${days.map(d=>{ if(t==='k'&&d===OFFDAY) return '<td class="c0 off"><span class="rest">إجازة</span></td>';
+       ${days.map(d=>{ if(t==='k'&&isPausedWeek(WEEK)) return '<td class="c0 off"><span class="rest" style="color:var(--gold)">موقوف</span></td>'; if(t==='k'&&d===OFFDAY) return '<td class="c0 off"><span class="rest">إجازة</span></td>';
          const m=mark(WEEK,sid,t,d); const pe=m?.s==='e'&&!m.ok;
          return `<td class="c0"><button class="cell" data-sid="${sid}" data-t="${t}" data-d="${d}"
            ${m?.s?`data-s="${m.s}"`:''} onclick="cellClick(this,event)" oncontextmenu="cellMenu(this,event);return false"
@@ -1914,16 +1956,30 @@ function pHourly(){
 
   return weekBar('report') + `<div class="card"><h2>تقرير الساعة الأسبوعية<span class="cnt">${esc(pid2name(fid))}</span></h2>
    <div class="pad" style="background:var(--cream);border-bottom:1px solid var(--gold-2)">
-    <div class="row" style="gap:26px">
+    <div class="row" style="gap:20px;flex-wrap:wrap">
       <div><div style="font-size:11.5px;color:var(--muted);font-weight:600">المجموعة</div><b>${esc(pid2name(fid))}</b></div>
-      <div><div style="font-size:11.5px;color:var(--muted);font-weight:600">عدد طلاب المجموعة</div><b>${n}</b></div>
+      <div><div style="font-size:11.5px;color:var(--muted);font-weight:600">عدد الطلاب</div><b>${n}</b></div>
       <div><div style="font-size:11.5px;color:var(--muted);font-weight:600">الأسبوع</div><b>${wlabel(WEEK)}</b></div>
       <div style="margin-right:auto;text-align:center"><div style="font-size:11.5px;color:var(--muted);font-weight:600">نسبة انضباط المجموعة</div>
-        <b style="font-size:25px;color:var(--gold)">${disc===null?'—':n1(disc)+'٪'}</b></div></div></div>
+        <b style="font-size:25px;color:var(--gold)">${disc===null?'—':n1(disc)+'٪'}</b></div></div>
+    <div class="row" style="gap:16px;margin-top:12px;flex-wrap:wrap">
+      <div style="background:#fff3e0;border:1px solid #ffcc80;border-radius:8px;padding:10px 16px;text-align:center;min-width:120px">
+        <div style="font-size:11px;color:var(--muted);font-weight:600">المعتذرون</div>
+        <div style="font-size:24px;font-weight:700;color:#e65100">${cS}</div>
+        <div style="font-size:11px;color:var(--muted)">البوابة والواتساب</div></div>
+      <div style="background:#fce4ec;border:1px solid #f48fb1;border-radius:8px;padding:10px 16px;text-align:center;min-width:120px">
+        <div style="font-size:11px;color:var(--muted);font-weight:600">المتغيبون</div>
+        <div style="font-size:24px;font-weight:700;color:#c62828">${cA}</div>
+        <div style="font-size:11px;color:var(--muted)">عن جلسة التسميع</div></div>
+      <div style="background:#e8eaf6;border:1px solid #9fa8da;border-radius:8px;padding:10px 16px;text-align:center;min-width:120px">
+        <div style="font-size:11px;color:var(--muted);font-weight:600">المتعثرون</div>
+        <div style="font-size:24px;font-weight:700;color:#1a237e">${cP}</div>
+        <div style="font-size:11px;color:var(--muted)">في الخطة</div></div>
+    </div></div>
    <div class="tw"><table class="d"><thead><tr><th style="min-width:230px">البند</th><th>العدد</th><th>النسبة</th><th>الأسماء</th></tr></thead><tbody>
-    <tr><td class="nm">المتعثرون في الإرسال — البوابة والمجموعة</td><td><b>${cS}</b></td><td>${pS===null?'—':n1(pS)+'٪'}</td>
+    <tr><td class="nm">المعتذرون في البوابة والواتساب</td><td><b>${cS}</b></td><td>${pS===null?'—':n1(pS)+'٪'}</td>
       <td style="font-size:12px;color:var(--muted)">${late.length?esc(late.join('، ')):'—'}</td></tr>
-    <tr><td class="nm">المتغيبون</td><td><b>${cA}</b></td><td>${pA===null?'—':n1(pA)+'٪'}</td>
+    <tr><td class="nm">المتغيبون عن جلسة التسميع</td><td><b>${cA}</b></td><td>${pA===null?'—':n1(pA)+'٪'}</td>
       <td style="font-size:12px;color:var(--muted)">${abs.length?esc(abs.join('، ')):'—'}</td></tr>
     <tr><td class="nm">المتعثرون في الخطة</td><td><b>${cP}</b></td><td>${pP===null?'—':n1(pP)+'٪'}</td>
       <td style="font-size:12px;color:var(--muted)">${plan.length?esc(plan.join('، ')):'—'}</td></tr>
@@ -3188,6 +3244,78 @@ function filterStaff(q){
   });
 }
 
+
+/* إيقاف الحفظ مؤقتاً */
+function isPausedWeek(w){ return !!(S.pauseWeeks && S.pauseWeeks[w]); }
+function togglePauseWeek(w){
+  if(!S.pauseWeeks) S.pauseWeeks = {};
+  if(S.pauseWeeks[w]){
+    delete S.pauseWeeks[w];
+    flash('تم استئناف الحفظ لهذا الأسبوع.','ok');
+  } else {
+    S.pauseWeeks[w] = 1;
+    flash('تم إيقاف الحفظ مؤقتاً لهذا الأسبوع — لن يُحتسب غياب على الطلاب.','warn');
+  }
+  save(); render();
+}
+
+
+function pActivity(){
+  if(!isMgr()) return '<div class="card"><div class="none">هذه الصفحة للمدير فقط.</div></div>';
+  
+  let act = {};
+  try { act = JSON.parse(localStorage.getItem('maher_act')||'{}'); } catch(e){}
+  
+  const today = new Date().toISOString().slice(0,10);
+  const week = Math.floor(Date.now()/(7*24*3600*1000));
+  const month = new Date().toISOString().slice(0,7);
+  
+  function fmt(sec){
+    if(!sec) return '—';
+    const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60);
+    return h ? `${h}س ${m}د` : `${m}د`;
+  }
+  
+  // جمع بيانات الطاقم
+  const followers = S.people.filter(p=>p.active && (p.section===curSec()||curSec()==='all') && 
+    (p.role.startsWith('متابع')||p.role.startsWith('مشرف')));
+  
+  const rows = followers.map(p=>{
+    const uid = (S.users||[]).find(u=>u.pid===p.id);
+    const id = uid ? String(uid.id) : null;
+    const data = id ? (act[id]||{}) : {};
+    return {
+      name: p.name,
+      role: p.role,
+      today: data[today]||0,
+      week: data['week_'+week]||0,
+      month: data['month_'+month]||0,
+    };
+  }).sort((a,b)=>b.month-a.month);
+  
+  return `<div class="card"><h2>نشاط المتابعين على المنصة</h2>
+    <div class="pad" style="background:var(--cream);border-bottom:1px solid var(--gold-2)">
+      <p style="font-size:12px;color:var(--muted);margin:0">يُسجَّل وقت النشاط الفعلي — يتوقف الاحتساب بعد 5 دقائق من عدم التفاعل.</p>
+    </div>
+    <div class="tw"><table class="d" style="min-width:600px"><thead><tr>
+      <th>م</th><th>المتابع</th><th>الصفة</th>
+      <th>اليوم</th><th>الأسبوع</th><th>الشهر</th>
+    </tr></thead><tbody>
+    ${rows.map((r,i)=>`<tr>
+      <td class="n">${i+1}</td>
+      <td class="nm">${esc(r.name)}</td>
+      <td><span class="tag ${r.role.startsWith('مشرف')?'x':'r'}">${esc(r.role)}</span></td>
+      <td>${fmt(r.today)}</td>
+      <td>${fmt(r.week)}</td>
+      <td style="font-weight:${r.month>3600?'700':'400'};color:${r.month>3600?'var(--ok)':'inherit'}">${fmt(r.month)}</td>
+    </tr>`).join('')}
+    </tbody></table></div>
+    <div class="pad noprint" style="font-size:12px;color:var(--muted)">
+      ملاحظة: البيانات محفوظة في المتصفح المحلي — تتراكم مع الاستخدام.
+    </div>
+  </div>`;
+}
+
 function render(){
   if(!SESSION){ $('app').innerHTML = loginView(); return; }
   /* حفظ التركيز والموضع قبل الرسم */
@@ -3197,7 +3325,7 @@ function render(){
   const _selEnd   = _focused && typeof _focused.selectionEnd   === 'number' ? _focused.selectionEnd   : null;
   const P = PAGES();
   if(!P[PAGE] || !P[PAGE][1]) PAGE='home';
-  const body = ({home:pHome,staffdata:pStaffData,people:pPeople,students:pStudents,circles:pCircles,weekly:pWeekly,
+  const body = ({home:pHome,staffdata:pStaffData,activity:pActivity,people:pPeople,students:pStudents,circles:pCircles,weekly:pWeekly,
     report:pWeekReport,top:pTop,hourly:pHourly,actions:pActions,
     evalp:pEval,race:pRace,dist:pDist,trash:pTrash,users:pUsers,audit:pAudit})[PAGE]();
   const msgs = FLASH.map(([k,m])=>`<div class="msg ${k}">${esc(m)}</div>`).join(''); FLASH=[];
