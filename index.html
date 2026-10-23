@@ -3155,7 +3155,7 @@ function pStaffData(){
       const rc = p.role&&p.role.includes('مشرف')?'x':p.role&&p.role.includes('متابع')?'r':'m';
       return `<div class="card">
         <div style="background:var(--navy);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px">
-          <button class="btn o sm" onclick="ui.sdOpen=null;ui.sdEdit=false;render()" style="color:#fff;border-color:rgba(255,255,255,.4)">← رجوع</button>
+          <button class="btn o sm" onclick="ui.sdOpen=null;ui.sdEdit=false;render()" style="color:#fff;border-color:#fff;background:rgba(255,255,255,.15)">← رجوع</button>
           ${isMgr()?`<button class="btn g sm" onclick="ui.sdEdit=!ui.sdEdit;render()">${ui.sdEdit?'✕ إلغاء':'✏️ تعديل'}</button>`:''}
           <div class="sd-av" style="width:48px;height:48px;font-size:18px">${av}</div>
           <div>
