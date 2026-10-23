@@ -3051,7 +3051,7 @@ const STAFF_DATA = [{"name": "عبدالمجيد عبدالله حمد الرش�
 function pStaffData(){
   const q = (ui.sdq||'').trim().toLowerCase();
   const roleF = ui.sdRole||'';
-  
+
   let rows = STAFF_DATA;
   if(q) rows = rows.filter(p =>
     (p.name||'').toLowerCase().includes(q) ||
@@ -3063,7 +3063,8 @@ function pStaffData(){
   if(roleF) rows = rows.filter(p => (p.role||'').includes(roleF));
 
   function fi(lbl, val, full) {
-    if(!val || val==='None' || val==='') return '';
+    if(!val || val==='None' || val==='' || val==='لا توجد لدي إجازة من طريق الشاطبية' && lbl==='روايات الشاطبية') return '';
+    if((val||'').startsWith('لا توجد')) return '';
     return `<div class="sdf${full?' sdff':''}"><div class="sdfl">${lbl}</div><div class="sdfv">${esc(val)}</div></div>`;
   }
 
@@ -3076,18 +3077,9 @@ function pStaffData(){
         <div class="sd-av">${av}</div>
         <div style="flex:1">
           <div style="font-weight:700;font-size:13.5px">${esc(p.name)}</div>
-          <div style="margin-top:3px"><span class="tag ${rc}" style="font-size:11px">${esc(p.role||'—')}</span></div>
+          <div style="margin-top:3px"><span class="tag ${rc}" style="font-size:11px">${esc(p.role||'—')}</span> ${p.city?`<span style="font-size:11px;opacity:.7">· ${esc(p.city)}</span>`:''}</div>
         </div>
-      </div>
-      <div class="sd-cb">
-        ${p.phone?`<div class="sd-row"><span class="sd-lbl">الجوال</span><span>${esc(p.phone)}</span></div>`:''}
-        ${p.city?`<div class="sd-row"><span class="sd-lbl">المدينة</span><span>${esc(p.city)}</span></div>`:''}
-        ${p.degree?`<div class="sd-row"><span class="sd-lbl">المؤهل</span><span>${esc(p.degree)}</span></div>`:''}
-      </div>
-      <div class="sd-cf">
-        ${p.has_certificate==='نعم'?'<span class="tag h" style="font-size:11px">📜 إجازة</span>':''}
-        ${p.salary?`<span class="tag m" style="font-size:11px">💰 ${esc(String(p.salary))} ريال</span>`:''}
-        ${(p.quran_amount||'').includes('كامل')?'<span class="tag h" style="font-size:11px">القرآن كاملاً</span>':''}
+        <div style="color:rgba(255,255,255,.5);font-size:18px">‹</div>
       </div>
     </div>`;
   }
@@ -3099,50 +3091,66 @@ function pStaffData(){
     if(p) {
       const init = p.name.trim().split(' ').filter(Boolean);
       const av = init.length>=2 ? init[0][0]+(init[init.length-1][0]||'') : init[0]?.[0]||'؟';
+      const rc = p.role&&p.role.includes('مشرف')?'x':p.role&&p.role.includes('متابع')?'r':'m';
       return `<div class="card">
-        <div style="background:var(--navy);color:#fff;padding:14px 16px;border-radius:10px 10px 0 0;display:flex;align-items:center;gap:12px">
+        <div style="background:var(--navy);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px">
           <button class="btn o sm" onclick="ui.sdOpen=null;render()" style="color:#fff;border-color:rgba(255,255,255,.4)">← رجوع</button>
           <div class="sd-av" style="width:48px;height:48px;font-size:18px">${av}</div>
-          <div><div style="font-weight:700;font-size:16px">${esc(p.name)}</div>
-          <div style="opacity:.75;font-size:12px;margin-top:2px">${esc(p.role||'')} ${p.city?'· '+esc(p.city):''}</div></div>
+          <div>
+            <div style="font-weight:700;font-size:16px">${esc(p.name)}</div>
+            <div style="opacity:.75;font-size:12px;margin-top:3px">
+              <span class="tag ${rc}" style="font-size:11px">${esc(p.role||'')}</span>
+              ${p.city?' · '+esc(p.city):''}
+            </div>
+          </div>
         </div>
         <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
-          <div class="sd-sec"><div class="sd-st">البيانات الشخصية</div><div class="sd-sg">
-            ${fi('رقم الهوية',p.nid)} ${fi('الجنسية',p.nationality)} ${fi('الحالة الاجتماعية',p.marital)}
-            ${fi('تاريخ الميلاد (هجري)',p.birth_h)} ${fi('تاريخ الميلاد (ميلادي)',p.birth_m)}
-            ${fi('منطقة السكن',p.region)} ${fi('مدينة السكن',p.city)} ${fi('الحي',p.neighborhood)}
+
+          <div class="sd-sec"><div class="sd-st">📋 البيانات الشخصية</div><div class="sd-sg">
+            ${fi('رقم الهوية / الإقامة', p.nid)}
+            ${fi('الجنسية', p.nationality)}
+            ${fi('الحالة الاجتماعية', p.marital)}
+            ${fi('تاريخ الميلاد (هجري)', p.birth_h)}
+            ${fi('تاريخ الميلاد (ميلادي)', p.birth_m)}
+            ${fi('منطقة السكن', p.region)}
+            ${fi('مدينة السكن', p.city)}
+            ${fi('الحي', p.neighborhood)}
           </div></div>
-          <div class="sd-sec"><div class="sd-st">بيانات التواصل</div><div class="sd-sg">
-            ${fi('الجوال الشخصي',p.phone)} ${fi('جوال العمل',p.work_phone)}
-            ${fi('البريد الشخصي',p.email)} ${fi('بريد العمل',p.work_email)}
+
+          <div class="sd-sec"><div class="sd-st">📞 بيانات التواصل</div><div class="sd-sg">
+            ${fi('الجوال الشخصي', p.phone)}
+            ${fi('جوال العمل', p.work_phone)}
+            ${fi('البريد الشخصي', p.email)}
+            ${fi('بريد العمل', p.work_email)}
           </div></div>
-          <div class="sd-sec"><div class="sd-st">المؤهل العلمي</div><div class="sd-sg">
-            ${fi('أعلى مؤهل',p.degree)} ${fi('مجال التخصص',p.field)} ${fi('التخصص الدقيق',p.specialization,true)}
+
+          <div class="sd-sec"><div class="sd-st">🎓 المؤهل العلمي</div><div class="sd-sg">
+            ${fi('أعلى مؤهل', p.degree)}
+            ${fi('مجال التخصص', p.field)}
+            ${fi('التخصص الدقيق', p.specialization, true)}
           </div></div>
-          <div class="sd-sec"><div class="sd-st">بيانات العمل</div><div class="sd-sg">
-            ${fi('الصفة',p.role)} ${fi('جهة الارتباط',p.affiliation)} ${fi('الجمعية / الجهة',p.association)}
-            ${fi('المجمع',p.complex)} ${fi('منطقة العمل',p.work_region)} ${fi('مدينة العمل',p.work_city)}
-            ${fi('حي العمل',p.work_neighborhood)} ${fi('تاريخ البداية (هجري)',p.start_h)} ${fi('تاريخ البداية (ميلادي)',p.start_m)}
-            ${fi('آلية العمل',p.work_mode)} ${fi('أيام العمل',p.work_days)} ${fi('ساعات العمل',p.work_hours)}
-            ${fi('طلاب تابعون',p.students_count)} ${fi('مجموعات',p.groups_count)}
-            ${fi('معلمون تحت إشرافه',p.supervised_teachers)} ${fi('طلاب تحت إشرافه',p.supervised_students)}
-            ${fi('المشرف عليه',p.supervisor,true)}
+
+          <div class="sd-sec"><div class="sd-st">📖 الإجازات القرآنية</div><div class="sd-sg">
+            ${fi('مقدار الحفظ', p.quran_amount)}
+            ${fi('سنوات الخبرة في التعليم', p.exp_years)}
+            ${fi('إجازة قرآنية بالسند', p.has_certificate)}
+            ${p.has_certificate==='نعم' ? fi('روايات الشاطبية', p.rewayat_shatibia, true) : ''}
+            ${p.has_certificate==='نعم' ? fi('روايات الدرة', p.rewayat_dorra, true) : ''}
+            ${p.has_certificate==='نعم' ? fi('روايات طيبة النشر', p.rewayat_tayba, true) : ''}
           </div></div>
-          <div class="sd-sec"><div class="sd-st">الخبرة والإجازات القرآنية</div><div class="sd-sg">
-            ${fi('مقدار الحفظ',p.quran_amount)} ${fi('سنوات الخبرة',p.exp_years)}
-            ${fi('خبرة سابقة',p.prev_experience)} ${fi('وصف الخبرة',p.exp_desc,true)}
-            ${fi('إجازة قرآنية',p.has_certificate)}
-            ${fi('روايات الشاطبية',p.rewayat_shatibia,true)}
-            ${fi('روايات الدرة',p.rewayat_dorra,true)}
-            ${fi('روايات طيبة النشر',p.rewayat_tayba,true)}
+
+          <div class="sd-sec"><div class="sd-st">💰 المكافأة والبيانات البنكية</div><div class="sd-sg">
+            ${fi('هل يوجد مكافأة', p.has_salary)}
+            ${fi('المكافأة الشهرية', p.salary ? p.salary+' ريال' : '')}
+            ${fi('جهة الصرف', p.salary_source)}
+            ${fi('طريقة الاحتساب', p.salary_method)}
+            ${fi('هل طوال السنة', p.salary_all_year)}
+            ${fi('أشهر الاستحقاق', p.salary_months)}
+            ${fi('اسم البنك', p.bank)}
+            ${fi('الاسم المسجل على الحساب', p.iban_name, true)}
+            ${fi('رقم الآيبان', p.iban, true)}
           </div></div>
-          ${p.has_other_work==='نعم'?`<div class="sd-sec"><div class="sd-st">العمل الآخر</div><div class="sd-sg">${fi('المسمى والجهة',p.other_work,true)}</div></div>`:''}
-          <div class="sd-sec"><div class="sd-st">المكافأة المالية</div><div class="sd-sg">
-            ${fi('هل يوجد مكافأة',p.has_salary)} ${fi('المكافأة الشهرية',p.salary?p.salary+' ريال':'')}
-            ${fi('جهة الصرف',p.salary_source)} ${fi('طريقة الاحتساب',p.salary_method)}
-            ${fi('طوال السنة',p.salary_all_year)} ${fi('أشهر الاستحقاق',p.salary_months)}
-            ${fi('البنك',p.bank)} ${fi('الاسم المسجل',p.iban_name)} ${fi('رقم الآيبان',p.iban)}
-          </div></div>
+
         </div>
       </div>`;
     }
@@ -3161,11 +3169,12 @@ function pStaffData(){
         <option value="مدير">مدير</option>
       </select>
     </div></div>
-    ${!rows.length?'<div class="none">لا توجد نتائج</div>':`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;padding:16px">
+    ${!rows.length?'<div class="none">لا توجد نتائج</div>':`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:16px">
       ${rows.map(card).join('')}
     </div>`}
   </div>`;
 }
+
 
 function render(){
   if(!SESSION){ $('app').innerHTML = loginView(); return; }
