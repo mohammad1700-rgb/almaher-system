@@ -3500,11 +3500,16 @@ function pStats(){
 
   // مفاتيح التقارير حسب الفترة
   const now=new Date();
-  const periodKey=period==='daily'?now.toISOString().slice(0,10)
-    :period==='monthly'?now.toISOString().slice(0,7)
-    :period==='quarterly'?now.getFullYear()+'Q'+Math.ceil((now.getMonth()+1)/3)
-    :period==='yearly'?String(now.getFullYear())
-    :'all';
+  const navOffset=ui.statOffset||0;
+  function getPeriodKey(period, offset){
+    const d=new Date();
+    if(period==='daily'){d.setDate(d.getDate()+offset);return d.toISOString().slice(0,10);}
+    if(period==='monthly'){d.setMonth(d.getMonth()+offset);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+    if(period==='quarterly'){const q=Math.ceil((d.getMonth()+1)/3);const tq=q+offset;const yr=d.getFullYear()+Math.floor((tq-1)/4);const fq=((tq-1)%4+4)%4+1;return yr+'Q'+fq;}
+    if(period==='yearly'){return String(d.getFullYear()+offset);}
+    return 'all';
+  }
+  const periodKey=getPeriodKey(period, navOffset);
 
   if(!S.statsData)S.statsData={};
   if(!S.statsData[sec])S.statsData[sec]={};
@@ -3533,12 +3538,16 @@ function pStats(){
     +'<div class="pad" style="background:var(--cream);border-bottom:1px solid var(--gold-2)">'
     +'<div class="row" style="gap:8px;flex-wrap:wrap">'
     +['daily','monthly','quarterly','yearly','all'].map(function(p){
-      return '<button class="btn '+(period===p?'g':'o')+' sm" onclick="ui.statPeriod=\''+p+'\';render()">'+periodLabels[p]+'</button>';
+      return '<button class="btn '+(period===p?'g':'o')+' sm" onclick="ui.statPeriod=\''+p+'\';ui.statOffset=0;render()">'+periodLabels[p]+'</button>';
     }).join('')
     +'<button class="btn '+(editing?'dz':'o')+' sm" style="margin-right:auto" onclick="ui.statsEdit=!ui.statsEdit;render()">'+(editing?'✕ إلغاء':'✏️ تعديل')+'</button>'
     +(editing?'<button class="btn g sm" onclick="saveStats()">💾 حفظ</button>':'')
     +'</div>'
-    +'<div style="font-size:12px;color:var(--muted);margin-top:6px">الفترة: '+periodLabels[period]+' — '+periodKey+'</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-top:6px">'
+    +(period!=='all'?'<button onclick="ui.statOffset=(ui.statOffset||0)-1;render()" style="background:none;border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:14px">◀</button>':'')
+    +'<span style="font-size:12px;color:var(--muted)">الفترة: '+periodLabels[period]+' — '+periodKey+'</span>'
+    +(period!=='all'&&navOffset<0?'<button onclick="ui.statOffset=(ui.statOffset||0)+1;render()" style="background:none;border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:14px">▶</button>':'')
+    +'</div>'
     +'</div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0">'
     +fields.map(f=>'<div style="padding:14px 16px;border-bottom:1px solid var(--line);border-left:1px solid var(--line)">'
