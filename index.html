@@ -3003,6 +3003,23 @@ function loginView(){
     </div></div></div>`;
 }
 
+
+/* فلترة الجدول مباشرة بدون render() */
+function filterTable(type, q, nameCol){
+  q = (q||'').trim();
+  const qL = q.toLowerCase();
+  // نبحث في كل الجداول الظاهرة
+  const tables = document.querySelectorAll('table.d tbody');
+  tables.forEach(tbody=>{
+    [...tbody.rows].forEach(tr=>{
+      if(tr.classList.contains('grp')) return; // تخطي رؤوس المجموعات
+      if(!q){ tr.style.display=''; return; }
+      const text = tr.textContent.toLowerCase();
+      tr.style.display = text.includes(qL) ? '' : 'none';
+    });
+  });
+}
+
 function render(){
   if(!SESSION){ $('app').innerHTML = loginView(); return; }
   /* حفظ التركيز والموضع قبل الرسم */
