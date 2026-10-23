@@ -3514,8 +3514,8 @@ function pAllHourly(){
     });
     const disc=Math.max(0,100-((late.length/rows.length)*20+(abs.length/rows.length)*40+(plan.length/rows.length)*40));
     const open=ui.openFollower===f.id;
-    // هل أدخل التقرير هذا الأسبوع؟
-    const hasReport=S.approvals?.[WEEK]?.[f.id]||rows.some(r=>r.done);
+    // هل اعتمد التقرير هذا الأسبوع؟
+    const hasReport=!!(S.approvals?.[WEEK]?.[f.id]);
     const cardColor=hasReport?'#2e7d32':'#c62828';
     return '<div class="card" style="margin-bottom:8px">'
       +'<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;background:'+cardColor+';color:#fff;border-radius:'+(open?'10px 10px 0 0':'10px')+'" onclick="ui.openFollower='+(open?'null':f.id)+';render()">'
