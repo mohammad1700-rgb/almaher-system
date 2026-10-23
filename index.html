@@ -557,10 +557,10 @@ S.nextS ??= 1; S.nextA ??= 1; S.flags ??= {};
 /* توحيد اسم حقل الختم بعد أن كان يُكتب باسمين */
 S.students.forEach(s=>{ if(s.khatmah!=null){ if(s.khat==null) s.khat=s.khatmah; delete s.khatmah; } });
 /* تعثّر يُسجَّل باليد على الطالب في الأسبوع */
-const FLAGS = {send:'تعثر الإرسال', abs:'التغيب', plan:'تعثر الخطة',
+const FLAGS = {send_ws:'واتساب', send_portal:'بوابة', abs:'التغيب', plan:'تعثر الخطة',
  resp:'عدم التواصل', fail:'عدم الاجتياز', rep:'عدم التكرار'};
 /* الأولى تعثر يُرصد للتقرير، والثانية مخالفات يترتب عليها جزاء في اللائحة */
-const FLAG_MAN  = ['send','abs','plan'];
+const FLAG_MAN  = ['send_ws','send_portal','abs','plan'];
 const FLAG_SANC = ['resp','fail','rep'];
 const FLAG_SANCT = {
  resp:{c:'الاستجابة للمتابع', i:'عدم تجاوب الطالب مع المتابع خلال يوم واحد دون عذر مقنع'},
@@ -574,9 +574,10 @@ const DEL_WHY = ['انسحاب الطالب بطلبه','مغادرة مجموع
  'النقل إلى برنامج آخر','ظرف خاص','سبب آخر'];
 const flagOf = (w,sid,k) => !!(S.flags?.[w]?.[sid]?.[k]);
 function toggleFlag(w,sid,k){ S.flags[w] ??= {}; S.flags[w][sid] ??= {};
-  S.flags[w][sid][k] = !S.flags[w][sid][k];
-  if(!S.flags[w][sid][k]) delete S.flags[w][sid][k];
-  return !!S.flags[w][sid][k]; }
+  if(S.flags[w][sid][k]) { delete S.flags[w][sid][k]; delete S.flags[w][sid][k+'_at']; return false; }
+  S.flags[w][sid][k] = 1;
+  S.flags[w][sid][k+'_at'] = Date.now();
+  return true; }
 if (!Array.isArray(S.users) || !S.users.length) S.users = fresh().users;
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 function flash(m,k='ok'){ FLASH.push([k,m]); }
@@ -3462,7 +3463,7 @@ function pRanking(){
     const late=[],abs=[],plan=[];
     rows.forEach(r=>{
       const fl=S.flags?.[WEEK]?.[r.s.id]||{};
-      if(r.q.l||fl.send)late.push(1);
+      if(r.q.l||fl.send_ws)late.push(1);
       if(r.q.a||fl.abs)abs.push(1);
       if(r.sh.days||fl.plan||(r.plan!==null&&r.plan!==''&&+r.plan<r.quota))plan.push(1);
     });
@@ -3512,7 +3513,7 @@ function pAllHourly(){
     const rows=reportRows(WEEK,f.id);
     rows.forEach(r=>{
       const fl=S.flags?.[WEEK]?.[r.s.id]||{};
-      if(r.q.l||fl.send)totalLate++;
+      if(r.q.l||fl.send_ws)totalLate++;
       if(r.q.a||fl.abs)totalAbs++;
       if(r.sh.days||fl.plan||(r.plan!==null&&r.plan!==''&&+r.plan<r.quota))totalPlan++;
     });
@@ -3538,7 +3539,7 @@ function pAllHourly(){
     const late=[],abs=[],plan=[];
     rows.forEach(r=>{
       const fl=S.flags?.[WEEK]?.[r.s.id]||{};
-      if(r.q.l||fl.send)late.push(r.s.name);
+      if(r.q.l||fl.send_ws)late.push(r.s.name);
       if(r.q.a||fl.abs)abs.push(r.s.name);
       if(r.sh.days||fl.plan||(r.plan!==null&&r.plan!==''&&+r.plan<r.quota))plan.push(r.s.name);
     });
@@ -3795,6 +3796,53 @@ if(!window._statsNotifInit){
   window._statsNotifInit = true;
   setTimeout(checkStatsNotif, 3000);
   setInterval(checkStatsNotif, 3600000);
+}
+
+function flagOnTime(w, sid, k, circleDays){
+  const at = S.flags?.[w]?.[sid]?.[k+'_at'];
+  if(!at) return false;
+  const d = new Date(at);
+  const day = d.getDay(); // 0=أحد, 1=اثنين...
+  const h = d.getHours();
+  
+  if(k==='send_ws'||k==='send_portal'||k==='abs'){
+    // يومي - يجب إدخاله في نفس اليوم (قبل منتصف الليل)
+    const inputDate = d.toISOString().slice(0,10);
+    const flagWeekDay = d.getDay();
+    // يكون في وقته إذا أُدخل في يوم تسميع
+    const dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+    const inputDayName = dayNames[flagWeekDay];
+    return !circleDays || circleDays === 'يوميا' || circleDays.includes(inputDayName);
+  }
+  if(k==='plan'){
+    // يوم الأحد أو الاثنين من الأسبوع التالي قبل 1 ظهراً
+    return (day===0||day===1) && h < 13;
+  }
+  return true;
+}
+
+function calcOnTimeScore(w, fid){
+  const rows = reportRows(w, fid);
+  if(!rows.length) return 0;
+  let ontime=0, total=0;
+  rows.forEach(r=>{
+    const fl = S.flags?.[w]?.[r.s.id]||{};
+    const c = S.circles.find(x=>x.id===r.s.cid);
+    const days = c?.days||'';
+    ['send_ws','send_portal','abs','plan'].forEach(k=>{
+      if(fl[k]){
+        total++;
+        if(flagOnTime(w, r.s.id, k, days)) ontime++;
+      }
+    });
+  });
+  // 20% إذا أدخل باكراً
+  const ap = S.approvals?.[w]?.[fid];
+  const apDate = ap ? new Date(ap.at||ap.ver||0) : null;
+  const apOntime = apDate && apDate.getDay()===1 && apDate.getHours()<13;
+  if(apOntime) return 20;
+  if(total===0) return 0;
+  return Math.round((ontime/total)*20);
 }
 function render(){
   if(!SESSION){ $('app').innerHTML = loginView(); return; }
