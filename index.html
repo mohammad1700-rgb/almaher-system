@@ -3032,7 +3032,7 @@ function modal(title, body, foot){
 function closeModal(){ $('lay')?.remove(); }
 
 /* ---------------- الهيكل والتوجيه ---------------- */
-let ui = {q:'',sugForm:false,openFollower:null,taskForm:false,sq:'',cq:'',sdq:'',sdRole:'',sdOpen:null,show:'active',day:null,fid:null,sid:null,kind:null,ec:null,pnode:null,atab:'sanc',ttab:'students',rtab:'week',dq:'',t:null};
+let ui = {q:'',sugForm:false,openFollower:null,taskForm:false,sdEdit:false,sq:'',cq:'',sdq:'',sdRole:'',sdOpen:null,show:'active',day:null,fid:null,sid:null,kind:null,ec:null,pnode:null,atab:'sanc',ttab:'students',rtab:'week',dq:'',t:null};
 function go(p,show){
   closeSheet(); PAGE=p;
   if(show) ui.show=show; else if(p==='students') ui.show='active';
@@ -3155,7 +3155,8 @@ function pStaffData(){
       const rc = p.role&&p.role.includes('مشرف')?'x':p.role&&p.role.includes('متابع')?'r':'m';
       return `<div class="card">
         <div style="background:var(--navy);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px">
-          <button class="btn o sm" onclick="ui.sdOpen=null;render()" style="color:#fff;border-color:rgba(255,255,255,.4)">← رجوع</button>
+          <button class="btn o sm" onclick="ui.sdOpen=null;ui.sdEdit=false;render()" style="color:#fff;border-color:rgba(255,255,255,.4)">← رجوع</button>
+          ${isMgr()?`<button class="btn g sm" onclick="ui.sdEdit=!ui.sdEdit;render()">${ui.sdEdit?'✕ إلغاء':'✏️ تعديل'}</button>`:''}
           <div class="sd-av" style="width:48px;height:48px;font-size:18px">${av}</div>
           <div>
             <div style="font-weight:700;font-size:16px">${esc(p.name)}</div>
@@ -3236,6 +3237,38 @@ function pStaffData(){
 
 
 
+
+
+function saveStaffEdit(idx){
+  if(idx===null||idx===undefined) return;
+  const p = STAFF_DATA[idx];
+  if(!p) return;
+  p.name = document.getElementById('se-name')?.value?.trim() || p.name;
+  p.phone = document.getElementById('se-phone')?.value?.trim() || p.phone;
+  p.email = document.getElementById('se-email')?.value?.trim() || p.email;
+  p.nid = document.getElementById('se-nid')?.value?.trim() || p.nid;
+  p.birth_m = document.getElementById('se-birth')?.value?.trim() || p.birth_m;
+  p.degree = document.getElementById('se-degree')?.value?.trim() || p.degree;
+  p.iban = document.getElementById('se-iban')?.value?.trim() || p.iban;
+  p.bank = document.getElementById('se-bank')?.value?.trim() || p.bank;
+  p.salary = document.getElementById('se-salary')?.value?.trim() || p.salary;
+  // حفظ في localStorage
+  try { localStorage.setItem('maher_staff_edits', JSON.stringify(STAFF_DATA)); } catch(e){}
+  ui.sdEdit = false;
+  flash('تم حفظ بيانات ' + p.name + ' بنجاح.', 'ok');
+  render();
+}
+
+// تحميل التعديلات المحفوظة
+(function(){
+  try {
+    const saved = localStorage.getItem('maher_staff_edits');
+    if(saved){
+      const edits = JSON.parse(saved);
+      edits.forEach((e,i)=>{ if(STAFF_DATA[i]) Object.assign(STAFF_DATA[i], e); });
+    }
+  } catch(e){}
+})();
 
 function openStaffCard(idx){
   ui.sdOpen = idx;
