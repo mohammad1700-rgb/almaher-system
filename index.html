@@ -1512,6 +1512,7 @@ function repaint(sid){
   });
 }
 document.addEventListener('keydown',e=>{
+  if(e.target && e.target.matches && e.target.matches('input,textarea,select,[contenteditable]')) return;
   const b=document.activeElement; if(!b||!b.classList?.contains('cell')) return;
   const map={'1':'c','2':'l','3':'e','4':'a'};
   if(map[e.key]){ e.preventDefault(); setCell(b,map[e.key]); return; }
@@ -3140,13 +3141,23 @@ document.addEventListener('click', function(e){
 /* منع تسرب أحداث لوحة المفاتيح من حقول الإدخال إلى بيئة النشر */
 (function(){
   function trapKey(e){
-    if(e.target.matches('input,textarea,select,[contenteditable]')){
+    if(e.target && e.target.matches && e.target.matches('input,textarea,select,[contenteditable]')){
       e.stopImmediatePropagation();
-      /* لا نمنع الافتراضي حتى يعمل الكتابة والنسخ واللصق */
+      e.stopPropagation();
     }
   }
-  ['keydown','keyup','keypress'].forEach(t=>
-    document.addEventListener(t, trapKey, {capture:true, passive:false})
-  );
+  const opts = {capture:true, passive:false};
+  ['keydown','keyup','keypress'].forEach(t=>{
+    window.addEventListener(t, trapKey, opts);
+    document.addEventListener(t, trapKey, opts);
+    document.documentElement.addEventListener(t, trapKey, opts);
+    document.body && document.body.addEventListener(t, trapKey, opts);
+  });
+  // Re-attach after DOM ready in case body wasn't ready
+  document.addEventListener('DOMContentLoaded', ()=>{
+    ['keydown','keyup','keypress'].forEach(t=>{
+      document.body.addEventListener(t, trapKey, opts);
+    });
+  });
 })();
 </script>
