@@ -3214,7 +3214,23 @@ function pStaffData(){
           </div></div>
 
         </div>
-      </div>`;
+      </div>
+      ${ui.sdEdit ? (() => {
+        return '<div class="sd-sec"><div class="sd-st">✏️ تعديل البيانات</div><div style="padding:16px;display:flex;flex-direction:column;gap:12px">' +
+          '<div class="fld"><label>الاسم</label><input id="se-name" value="' + esc(p.name||'') + '" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>' +
+          '<div class="fld"><label>الجوال</label><input id="se-phone" value="' + esc(p.phone||'') + '" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>' +
+          '<div class="fld"><label>البريد الإلكتروني</label><input id="se-email" value="' + esc(p.email||'') + '" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>' +
+          '<div class="fld"><label>رقم الهوية</label><input id="se-nid" value="' + esc(p.nid||'') + '" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>' +
+          '<div class="fld"><label>تاريخ الميلاد</label><input id="se-birth" value="' + esc(p.birth_m||'') + '" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>' +
+          '<div class="fld"><label>الدرجة العلمية</label><input id="se-degree" value="' + esc(p.degree||'') + '" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>' +
+          '<div class="fld"><label>رقم الآيبان</label><input id="se-iban" value="' + esc(p.iban||'') + '" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>' +
+          '<div class="fld"><label>البنك</label><input id="se-bank" value="' + esc(p.bank||'') + '" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>' +
+          '<div class="fld"><label>المكافأة الشهرية (ريال)</label><input id="se-salary" type="number" value="' + esc(String(p.salary||'')) + '" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>' +
+          '<div class="row"><button class="btn g" onclick="saveStaffEdit(' + ui.sdOpen + ')">💾 حفظ التعديلات</button>' +
+          '<button class="btn dz" onclick="ui.sdEdit=false;render()">إلغاء</button></div>' +
+          '</div></div>';
+      })() : ''}
+      \`;
     }
   }
 
