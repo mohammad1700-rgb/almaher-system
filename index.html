@@ -446,7 +446,7 @@ function latinUser(name){
   out = out.replace(/\.+/g,'.').replace(/^\.|\.$/g,'').toLowerCase();
   return out || 'user';
 }
-const SEEDV = 7;   /* رقم إصدار بيانات الطاقم — يرتفع كلما حُدّث */
+const SEEDV = 8;   /* رقم إصدار بيانات الطاقم — يرتفع كلما حُدّث */
 let S, SESSION = null, PAGE = 'home', FLASH = [];
 try { const r = localStorage.getItem(KEY); S = r ? JSON.parse(r) : fresh(); } catch(e){ S = fresh(); }
 if (!S || !Array.isArray(S.people) || !S.people.length) S = fresh();
