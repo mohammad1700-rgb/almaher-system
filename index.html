@@ -852,7 +852,7 @@ function pHome(){
   const items = reqs.concat(todo).concat((reqs.length+todo.length)<4?blanks.slice(0,4-reqs.length-todo.length):[]);
   const fdate = t => t ? dual(t) : '';
 
-  return `<div class="hello"><h1>أهلا، ${esc(SESSION.name)}</h1>
+  return pHonorBoard() + `<div class="hello"><h1>أهلا، ${esc(SESSION.name)}</h1>
     <p>اختر الصفحة التي تريدها.</p></div>
   <div class="sechd"><h3>${isMgr()||can('view.all')?'البرنامج':'مجموعتي'}</h3>
     <button class="lnkb" onclick="go('students')">كل الطلاب</button></div>
