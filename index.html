@@ -760,6 +760,11 @@ function stat(k,v,acc,target,extra){
 const PAGES = () => ({
   home:    ['لوحة البرنامج', true],
   staffdata:['بيانات الطاقم الإداري والتعليمي', isMgr()],
+  suggestions:['الاقتراحات والشكاوى', true],
+  ranking:['التقييم والترتيب', isMgr()],
+  allhourly:['التقرير الإجمالي', isMgr()],
+  tasks:['مهامي ومسؤولياتي', true],
+  stats:['الإحصاءات الشاملة', isMgr()],
   activity: ['نشاط المتابعين', isMgr()],
   people:  ['المتابعون', true],
   students:['الطلاب', true],
@@ -847,7 +852,7 @@ function pHome(){
   const items = reqs.concat(todo).concat((reqs.length+todo.length)<4?blanks.slice(0,4-reqs.length-todo.length):[]);
   const fdate = t => t ? dual(t) : '';
 
-  return `<div class="hello"><h1>أهلا، ${esc(SESSION.name)}</h1>
+  return pHonorBoard() + `<div class="hello"><h1>أهلا، ${esc(SESSION.name)}</h1>
     <p>اختر الصفحة التي تريدها.</p></div>
   <div class="sechd"><h3>${isMgr()||can('view.all')?'البرنامج':'مجموعتي'}</h3>
     <button class="lnkb" onclick="go('students')">كل الطلاب</button></div>
@@ -3027,7 +3032,7 @@ function modal(title, body, foot){
 function closeModal(){ $('lay')?.remove(); }
 
 /* ---------------- الهيكل والتوجيه ---------------- */
-let ui = {q:'',sq:'',cq:'',sdq:'',sdRole:'',sdOpen:null,show:'active',day:null,fid:null,sid:null,kind:null,ec:null,pnode:null,atab:'sanc',ttab:'students',rtab:'week',dq:'',t:null};
+let ui = {q:'',sugForm:false,openFollower:null,taskForm:false,sq:'',cq:'',sdq:'',sdRole:'',sdOpen:null,show:'active',day:null,fid:null,sid:null,kind:null,ec:null,pnode:null,atab:'sanc',ttab:'students',rtab:'week',dq:'',t:null};
 function go(p,show){
   closeSheet(); PAGE=p;
   if(show) ui.show=show; else if(p==='students') ui.show='active';
@@ -3316,6 +3321,239 @@ function pActivity(){
   </div>`;
 }
 
+
+const TASKS_MEN = [{"id": 1, "title": "إرسال الاستفتاء بالإتمام عبر المجموعة وملصق التذكير", "desc": "يومياً حتى الساعة 12:00 ليلاً", "freq": "daily", "score": 1}, {"id": 2, "title": "التذكير بمواعيد الحلقات للتسميع قبل وقتها بـ 3 ساعات", "desc": "في أيام التسميع المعتمدة", "freq": "daily", "score": 1}, {"id": 3, "title": "إرسال الإشعارات والتنبيهات الواردة من إدارة البرنامج", "freq": "daily", "score": 1}, {"id": 4, "title": "متابعة الطالب في تنفيذ خطته", "freq": "daily", "score": 1}, {"id": 5, "title": "استقبال استفسارات الطلاب والإجابة عليها خلال 24 ساعة", "freq": "daily", "score": 1}, {"id": 6, "title": "رفع المشكلات إلى مشرف البرامج أو إدارة البرنامج", "freq": "daily", "score": 1}, {"id": 7, "title": "الحضور إلى حلقات التسميع في وقتها", "freq": "weekly", "score": 1}, {"id": 8, "title": "متابعة سير العملية التعليمية ومعالجة المشكلات", "freq": "weekly", "score": 1}, {"id": 9, "title": "متابعة المعلمين في رصد حضور الطلاب وتقييمهم في التسميع اليومي", "freq": "weekly", "score": 1}, {"id": 10, "title": "التأكد من إتمام الرصد بشكل يومي", "freq": "weekly", "score": 1}, {"id": 11, "title": "إنهاء متطلبات الساعة الأسبوعية كاملة يوم السبت", "freq": "weekly", "score": 1}, {"id": 12, "title": "إضافة جميع طلاب المجموعة في وسيلة التواصل المعتمدة وتحديثها", "freq": "monthly", "score": 1}, {"id": 13, "title": "اللقاء بالطالب حضورياً مرة كل شهر أو التواصل هاتفياً", "freq": "monthly", "score": 1}, {"id": 14, "title": "إدارة مشروع السرد الفصلي", "desc": "حصر الطلاب وإبلاغهم ومتابعة حضورهم", "freq": "seasonal", "score": 2}, {"id": 15, "title": "التكليف ببعض المهام من قِبل المشرف", "freq": "exceptional", "score": 1}];
+const TASKS_WOMEN = [{"id": 101, "title": "إرسال الاستفتاء بالإتمام عبر المجموعة وملصق التذكير", "desc": "يومياً حتى الساعة 12:00 ليلاً", "freq": "daily", "score": 1}, {"id": 102, "title": "التذكير بمواعيد الحلقات للتسميع قبل وقتها بـ 3 ساعات", "desc": "في أيام التسميع المعتمدة", "freq": "daily", "score": 1}, {"id": 103, "title": "إرسال الإشعارات والتنبيهات الواردة من إدارة البرنامج أو الجمعية", "freq": "daily", "score": 1}, {"id": 104, "title": "متابعة الطالبة في تنفيذ خطتها", "freq": "daily", "score": 1}, {"id": 105, "title": "استقبال استفسارات الطالبات والإجابة عليها خلال 24 ساعة", "freq": "daily", "score": 1}, {"id": 106, "title": "رفع المشكلات إلى مشرفة البرامج أو إدارة البرنامج", "freq": "daily", "score": 1}, {"id": 107, "title": "الحضور إلى حلقات التسميع في وقتها", "freq": "weekly", "score": 1}, {"id": 108, "title": "متابعة سير العملية التعليمية ومعالجة المشكلات", "freq": "weekly", "score": 1}, {"id": 109, "title": "متابعة المعلمات في رصد حضور الطالبات وتقييمهن في التسميع اليومي", "freq": "weekly", "score": 1}, {"id": 110, "title": "التأكد من إتمام رصد المعلمة بشكل يومي", "freq": "weekly", "score": 1}, {"id": 111, "title": "إنهاء متطلبات الساعة الأسبوعية كاملة يوم السبت", "freq": "weekly", "score": 1}, {"id": 112, "title": "إضافة جميع طالبات المجموعة في وسيلة التواصل المعتمدة وتحديثها", "freq": "monthly", "score": 1}, {"id": 113, "title": "اللقاء بالطالبة حضورياً مرة كل شهر أو التواصل هاتفياً", "freq": "monthly", "score": 1}, {"id": 114, "title": "إدارة مشروع السرد الفصلي", "desc": "حصر الطالبات وإبلاغهن ومتابعة حضورهن", "freq": "seasonal", "score": 2}, {"id": 115, "title": "التكليف ببعض المهام من قِبل المشرفة", "freq": "exceptional", "score": 1}];
+
+function pHonorBoard(){
+  const sec=curSec();
+  const fols=S.people.filter(p=>p.active&&(p.section===sec||sec==='all')&&p.role.startsWith('متابع'));
+  if(!fols.length) return '';
+  let scored=fols.map(p=>{
+    const rows=reportRows(WEEK,p.id);
+    const done=rows.filter(r=>r.done);
+    return {p,score:done.length?done.reduce((a,r)=>a+r.pct,0)/done.length:0};
+  }).sort((a,b)=>b.score-a.score).slice(0,3);
+  if(!scored.some(x=>x.score>0)) scored=fols.slice(0,3).map(p=>({p,score:null}));
+  if(!scored.length) return '';
+  const medals=['🥇','🥈','🥉'],ranks=['الأول','الثاني','الثالث'];
+  return '<div style="background:linear-gradient(135deg,#1a2340,#2d3a6b);color:#fff;border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--gold-2);white-space:nowrap">🏆 لوحة شرف المتابعين المتميزين</div>'
+    +'<div style="display:flex;gap:20px;flex-wrap:wrap;flex:1;justify-content:center">'
+    +scored.map((t,i)=>'<div style="text-align:center">'
+      +'<div style="font-size:22px">'+medals[i]+'</div>'
+      +'<div style="font-size:11px;opacity:.7">'+ranks[i]+'</div>'
+      +'<div style="font-weight:700;font-size:13px">'+esc(t.p.name)+'</div>'
+      +(t.score!==null?'<div style="font-size:11px;color:var(--gold-2)">'+n1(t.score)+'٪</div>':'')
+      +'</div>').join('')
+    +'</div></div>';
+}
+
+function pSuggestions(){
+  const myId=me()?.id;
+  const isAdmin=isMgr();
+  const sug=S.suggestions||[];
+  if(ui.sugForm){
+    return '<div class="card"><h2>تقديم طلب</h2><div class="pad" style="display:flex;flex-direction:column;gap:14px">'
+      +'<div class="fld"><label>نوع الطلب</label><select id="sug-type"><option value="suggestion">مقترح</option><option value="complaint">شكوى</option></select></div>'
+      +'<div class="fld"><label>العنوان</label><input id="sug-title" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>'
+      +'<div class="fld"><label>التفاصيل</label><textarea id="sug-body" rows="5" style="width:100%;resize:vertical" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></textarea></div>'
+      +'<div class="row"><button class="btn g" onclick="submitSuggestion()">إرسال</button>'
+      +'<button class="btn o" onclick="ui.sugForm=false;render()">إلغاء</button></div></div></div>';
+  }
+  const list=isAdmin?sug:sug.filter(s=>s.uid===myId);
+  const sl={new:'جديد',processing:'قيد المعالجة',closed:'مغلق'};
+  return '<div class="card"><h2>الاقتراحات والشكاوى<span class="cnt">'+list.length+'</span>'
+    +'<button class="btn g sm" style="margin-right:auto" onclick="ui.sugForm=true;render()">+ تقديم طلب</button></h2>'
+    +(!list.length?'<div class="none">لا توجد طلبات.</div>'
+    :'<div class="tw"><table class="d"><thead><tr><th>م</th><th>النوع</th><th>العنوان</th><th>مقدم الطلب</th><th>التاريخ</th><th>الحالة</th>'
+    +(isAdmin?'<th>إجراء</th>':'')+'</tr></thead><tbody>'
+    +list.map((s,i)=>'<tr><td>'+(i+1)+'</td>'
+      +'<td><span class="tag '+(s.type==='complaint'?'dz':'g')+'">'+(s.type==='complaint'?'شكوى':'مقترح')+'</span></td>'
+      +'<td class="nm">'+esc(s.title||'')+'</td><td>'+esc(s.userName||'—')+'</td>'
+      +'<td style="font-size:11px">'+(s.date||'').slice(0,10)+'</td>'
+      +'<td><b style="font-size:12px">'+(sl[s.status]||'جديد')+'</b></td>'
+      +(isAdmin?'<td><select onchange="updateSugStatus('+s.id+',this.value)" style="font-size:12px;border:1px solid var(--line);border-radius:6px;padding:3px 6px">'
+        +'<option value="new" '+(s.status==='new'?'selected':'')+'>جديد</option>'
+        +'<option value="processing" '+(s.status==='processing'?'selected':'')+'>قيد المعالجة</option>'
+        +'<option value="closed" '+(s.status==='closed'?'selected':'')+'>مغلق</option>'
+        +'</select></td>':'')
+      +'</tr>').join('')
+    +'</tbody></table></div>')+'</div>';
+}
+function submitSuggestion(){
+  const title=document.getElementById('sug-title')?.value?.trim();
+  const body=document.getElementById('sug-body')?.value?.trim();
+  const type=document.getElementById('sug-type')?.value||'suggestion';
+  if(!title)return say('أدخل عنوان الطلب.');
+  if(!S.suggestions)S.suggestions=[];
+  S.suggestions.push({id:Date.now(),type,title,body,uid:me()?.id,userName:me()?.name||'',date:new Date().toISOString(),status:'new'});
+  save();ui.sugForm=false;flash('تم إرسال طلبك.','ok');render();
+}
+function updateSugStatus(id,status){
+  const s=(S.suggestions||[]).find(x=>x.id===id);
+  if(s){s.status=status;save();render();}
+}
+
+function pRanking(){
+  if(!isMgr()) return '<div class="card"><div class="none">للمدير فقط.</div></div>';
+  const fols=S.people.filter(p=>p.active&&p.section===curSec()&&p.role.startsWith('متابع'));
+  const ranked=fols.map(p=>{
+    const rows=reportRows(WEEK,p.id);
+    const done=rows.filter(r=>r.done);
+    return {p,score:done.length?done.reduce((a,r)=>a+r.pct,0)/done.length:0};
+  }).sort((a,b)=>b.score-a.score);
+  const medals=['🥇','🥈','🥉'];
+  return '<div class="card"><h2>التقييم والترتيب</h2>'
+    +(!ranked.length?'<div class="none">لا توجد بيانات.</div>'
+    :'<div class="tw"><table class="d"><thead><tr><th>المركز</th><th>المتابع</th><th>الطلاب</th><th>النسبة</th></tr></thead><tbody>'
+    +ranked.map((r,i)=>'<tr style="'+(i<3?'background:var(--gold-3)':'')+'">'
+      +'<td style="font-size:18px;text-align:center">'+(i<3?medals[i]:i+1)+'</td>'
+      +'<td class="nm">'+esc(r.p.name)+'</td>'
+      +'<td>'+S.students.filter(s=>s.status==='active'&&s.fid===r.p.id).length+'</td>'
+      +'<td><b style="color:'+(r.score>80?'var(--ok)':r.score>50?'var(--gold)':'var(--warn,#e65100)')+'">'+( r.score?n1(r.score)+'٪':'—')+'</b></td>'
+      +'</tr>').join('')
+    +'</tbody></table></div>')+'</div>';
+}
+
+function pAllHourly(){
+  if(!isMgr()) return '<div class="card"><div class="none">للمدير فقط.</div></div>';
+  const fols=S.people.filter(p=>p.active&&p.section===curSec()&&p.role.startsWith('متابع'));
+  if(!fols.length) return weekBar('allhourly')+'<div class="card"><div class="none">لا يوجد متابعون.</div></div>';
+  return weekBar('allhourly')+fols.map(f=>{
+    const rows=reportRows(WEEK,f.id);
+    if(!rows.length) return '';
+    const late=[],abs=[],plan=[];
+    rows.forEach(r=>{
+      const fl=S.flags?.[WEEK]?.[r.s.id]||{};
+      if(r.q.l||fl.send)late.push(r.s.name);
+      if(r.q.a||fl.abs)abs.push(r.s.name);
+      if(r.sh.days||fl.plan||(r.plan!==null&&r.plan!==''&&+r.plan<r.quota))plan.push(r.s.name);
+    });
+    const disc=Math.max(0,100-((late.length/rows.length)*20+(abs.length/rows.length)*40+(plan.length/rows.length)*40));
+    const open=ui.openFollower===f.id;
+    return '<div class="card" style="margin-bottom:8px">'
+      +'<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;background:var(--navy);color:#fff;border-radius:'+(open?'10px 10px 0 0':'10px')+'" onclick="ui.openFollower='+(open?'null':f.id)+';render()">'
+      +'<span style="font-weight:700;flex:1">'+esc(f.name)+'</span>'
+      +'<span style="font-size:12px;opacity:.7">'+rows.length+' طالب</span>'
+      +'<span style="background:var(--gold);color:#fff;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">'+n1(disc)+'٪</span>'
+      +'<div style="display:flex;gap:10px;font-size:12px"><span>⚠️'+late.length+'</span><span>❌'+abs.length+'</span><span>📉'+plan.length+'</span></div>'
+      +'<span>'+(open?'▲':'▼')+'</span></div>'
+      +(open?'<div style="padding:14px 16px"><div class="tw"><table class="d"><thead><tr><th>البند</th><th>العدد</th><th>الأسماء</th></tr></thead><tbody>'
+        +'<tr><td>المعتذرون</td><td><b>'+late.length+'</b></td><td style="font-size:12px;color:var(--muted)">'+(late.length?esc(late.join('، ')):'—')+'</td></tr>'
+        +'<tr><td>المتغيبون</td><td><b>'+abs.length+'</b></td><td style="font-size:12px;color:var(--muted)">'+(abs.length?esc(abs.join('، ')):'—')+'</td></tr>'
+        +'<tr><td>المتعثرون</td><td><b>'+plan.length+'</b></td><td style="font-size:12px;color:var(--muted)">'+(plan.length?esc(plan.join('، ')):'—')+'</td></tr>'
+        +'</tbody></table></div></div>':'')
+      +'</div>';
+  }).join('');
+}
+
+function pStats(){
+  if(!isMgr()) return '<div class="card"><div class="none">للمدير فقط.</div></div>';
+  const sec=curSec();
+  const active=S.students.filter(s=>s.section===sec&&s.status==='active');
+  const deleted=S.students.filter(s=>s.section===sec&&s.status==='deleted');
+  const circles=S.circles.filter(c=>c.section===sec&&c.active!==false);
+  const fols=S.people.filter(p=>p.active&&p.section===sec&&p.role.startsWith('متابع'));
+  const teachers=S.people.filter(p=>p.active&&p.section===sec&&p.role.startsWith('معلم'));
+  function st(l,v,s,c){return '<div class="stat"><div class="l">'+l+'</div><div class="v" style="color:'+(c||'var(--gold)')+'"><b>'+v+'</b></div>'+(s?'<div style="font-size:11px;color:var(--muted)">'+s+'</div>':'')+'</div>';}
+  return '<div class="card"><h2>الإحصاءات الشاملة</h2><div class="stats">'
+    +st('إجمالي الطلاب',active.length,'نشط','var(--navy)')
+    +st('الحلقات',circles.length,'','var(--navy)')
+    +st('المتابعون',fols.length,'','var(--gold)')
+    +st('المعلمون',teachers.length,'','var(--gold)')
+    +st('المحذوفون',deleted.length,'إجمالي','var(--muted)')
+    +'</div><div style="padding:16px"><h3 style="font-size:14px;font-weight:700;margin:0 0 12px">توزيع الطلاب حسب المتابع</h3>'
+    +'<div class="tw"><table class="d"><thead><tr><th>المتابع</th><th>الطلاب</th></tr></thead><tbody>'
+    +fols.map(f=>'<tr><td class="nm">'+esc(f.name)+'</td><td>'+active.filter(s=>s.fid===f.id).length+'</td></tr>').join('')
+    +'</tbody></table></div></div></div>';
+}
+
+function pTasks(){
+  const myId=me()?.id;
+  const isAdmin=isMgr();
+  if(!Array.isArray(S.tasks)||S.tasks.length===0){
+    S.tasks=curSec()==='women'?TASKS_WOMEN:TASKS_MEN;
+    save();
+  }
+  const tasks=S.tasks;
+  const today=new Date().toISOString().slice(0,10);
+  const h=new Date().getHours();
+  const day=new Date().getDay();
+  const dom=new Date().getDate();
+  const lastDay=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();
+  const inWindow=h>=7&&h<24;
+  const freqLabel={daily:'يومية',weekly:'أسبوعية',monthly:'شهرية',seasonal:'فصلية',yearly:'سنوية',exceptional:'استثنائية'};
+  const freqOrder=['daily','weekly','monthly','seasonal','yearly','exceptional'];
+  const grouped={};
+  freqOrder.forEach(f=>{grouped[f]=tasks.filter(t=>t.freq===f);});
+  return '<div class="card"><h2>مهامي ومسؤولياتي'
+    +(isAdmin?'<button class="btn g sm" style="margin-right:auto" onclick="ui.taskForm=true;render()">+ إضافة مهمة</button>':'')
+    +'</h2>'
+    +freqOrder.filter(f=>grouped[f].length).map(f=>{
+      const done_count=grouped[f].filter(t=>{const k=myId+'_'+t.id+'_'+today;return !!(S.taskDone||{})[k];}).length;
+      return '<div style="margin:0 0 4px"><div style="background:var(--navy);color:#fff;padding:9px 16px;font-weight:700;font-size:13px">'
+        +freqLabel[f]+' — '+grouped[f].length+' مهام'
+        +'<span style="float:left;font-size:12px;opacity:.7">'+done_count+'/'+grouped[f].length+' مكتملة</span></div>'
+        +grouped[f].map(t=>{
+          const doneKey=myId+'_'+t.id+'_'+today;
+          const done=!!(S.taskDone||{})[doneKey];
+          let avail=false;
+          if(t.freq==='daily') avail=inWindow;
+          else if(t.freq==='weekly') avail=day===6&&inWindow;
+          else if(t.freq==='monthly') avail=dom===lastDay&&inWindow;
+          let statusHtml;
+          const cb='<input type="checkbox" '+(done?'checked':'')+' onchange="toggleTask(this,\'' + doneKey + '\',' + (t.score||1) + ')" style="width:18px;height:18px;cursor:pointer">';
+          if(avail) statusHtml='<div style="display:flex;align-items:center;gap:4px">'+cb+'<span style="font-size:11px;color:var(--ok);font-weight:600">متاح</span></div>';
+          else if(t.freq==='seasonal'||t.freq==='yearly'||t.freq==='exceptional') statusHtml='<span style="font-size:11px;color:var(--muted)">للاطلاع</span>';
+          else statusHtml='<span style="font-size:11px;color:var(--muted)">'+(done?'✓ ':'')+(t.freq==='weekly'?'السبت':t.freq==='monthly'?'آخر الشهر':'')+'</span>';
+          return '<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);background:'+(done?'var(--cream)':'var(--white)')+';">'
+            +statusHtml
+            +'<div style="flex:1"><div style="font-weight:'+(done?'400':'600')+';text-decoration:'+(done?'line-through':'none')+';color:'+(done?'var(--muted)':'var(--ink)')+'">'+esc(t.title)+'</div>'
+            +(t.desc?'<div style="font-size:12px;color:var(--muted)">'+esc(t.desc)+'</div>':'')+'</div>'
+            +'<span style="font-size:11px;color:var(--gold);font-weight:600">'+(t.score||1)+' درجة</span>'
+            +(isAdmin?'<button class="btn dz sm" onclick="deleteTask('+t.id+')">حذف</button>':'')
+            +'</div>';
+        }).join('')+'</div>';
+    }).join('')
+    +(!tasks.length?'<div class="none">لا توجد مهام.</div>':'')
+    +'</div>';
+}
+function toggleTask(el,key,score){
+  const done=el.checked;
+  if(!S.taskDone)S.taskDone={};
+  if(done){S.taskDone[key]={done:1,score:score||1,time:new Date().toISOString()};flash('✅ تم تسجيل الإتمام وإضافة '+(score||1)+' درجة.','ok');}
+  else delete S.taskDone[key];
+  save();render();
+}
+function deleteTask(id){
+  if(!confirm('حذف المهمة؟'))return;
+  S.tasks=(S.tasks||[]).filter(t=>t.id!==id);
+  save();render();
+}
+
+function swapFollower(pid){
+  const p=S.people.find(x=>x.id===pid);
+  if(!p) return;
+  const fols=S.people.filter(x=>x.active&&x.section===curSec()&&x.role.startsWith('متابع')&&x.id!==pid);
+  const opts=fols.map(f=>'<option value="'+f.id+'">'+esc(f.name)+'</option>').join('');
+  openMod('تبديل المتابع','<div class="mod-body"><p style="margin:0 0 12px;font-size:13px">استبدال <b>'+esc(p.name)+'</b> بمتابع آخر:</p>'
+    +'<div class="fld"><label>اختر المتابع البديل</label><select id="swap-sel">'+opts+'</select></div></div>'
+    +'<div class="mod-foot"><button class="btn g" onclick="confirmSwap('+pid+')">تأكيد</button>'
+    +'<button class="btn o" onclick="closeMod()">إلغاء</button></div>');
+}
+function confirmSwap(oldPid){
+  const newPid=+document.getElementById('swap-sel').value;
+  if(!newPid||newPid===oldPid)return say('اختر متابعاً مختلفاً.');
+  const oldP=S.people.find(x=>x.id===oldPid),newP=S.people.find(x=>x.id===newPid);
+  if(!oldP||!newP)return;
+  let moved=0;
+  S.students.forEach(s=>{if(s.fid===oldPid){s.fid=newPid;moved++;}});
+  S.circles.forEach(c=>{if(c.fid===oldPid)c.fid=newPid;});
+  if(!S.swapLog)S.swapLog=[];
+  S.swapLog.push({from:oldP.name,to:newP.name,date:new Date().toISOString(),students:moved});
+  save();closeMod();flash('تم استبدال '+oldP.name+' بـ '+newP.name+' ('+moved+' طالب).','ok');render();
+}
 function render(){
   if(!SESSION){ $('app').innerHTML = loginView(); return; }
   /* حفظ التركيز والموضع قبل الرسم */
@@ -3325,7 +3563,7 @@ function render(){
   const _selEnd   = _focused && typeof _focused.selectionEnd   === 'number' ? _focused.selectionEnd   : null;
   const P = PAGES();
   if(!P[PAGE] || !P[PAGE][1]) PAGE='home';
-  const body = ({home:pHome,staffdata:pStaffData,activity:pActivity,people:pPeople,students:pStudents,circles:pCircles,weekly:pWeekly,
+  const body = ({home:pHome,suggestions:pSuggestions,ranking:pRanking,allhourly:pAllHourly,tasks:pTasks,stats:pStats,staffdata:pStaffData,activity:pActivity,people:pPeople,students:pStudents,circles:pCircles,weekly:pWeekly,
     report:pWeekReport,top:pTop,hourly:pHourly,actions:pActions,
     evalp:pEval,race:pRace,dist:pDist,trash:pTrash,users:pUsers,audit:pAudit})[PAGE]();
   const msgs = FLASH.map(([k,m])=>`<div class="msg ${k}">${esc(m)}</div>`).join(''); FLASH=[];
