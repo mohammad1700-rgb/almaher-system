@@ -896,7 +896,7 @@ function pPeople(){
        <button class="btn g sm" style="border-radius:8px 0 0 8px;flex-shrink:0" onclick="document.getElementById('sq-ppl').focus()">بحث</button>
        <input id="sq-ppl" value="" placeholder="ابحث في الطاقم كله بالاسم أو النطاق"
          style="flex:1;border:1.5px solid var(--gold-2);border-right:none;border-radius:0 8px 8px 0;padding:7px 12px;font-family:var(--f);font-size:13px;outline:none;background:#fff;color:var(--ink)"
-         oninput="ui.q=this.value;clearTimeout(ui.t);ui.t=setTimeout(render,1200)" onkeydown="event.stopImmediatePropagation();if(event.key==='Enter'){clearTimeout(ui.t);render();}" onkeyup="event.stopImmediatePropagation()" onkeypress="event.stopImmediatePropagation()">
+         oninput="ui.q=this.value;" onkeydown="event.stopImmediatePropagation();if(event.key==='Enter'||event.key==='Return'){render();}" onkeyup="event.stopImmediatePropagation()" onkeypress="event.stopImmediatePropagation()" onblur="render()">
      </div>
       ${q?`<button class="btn o sm" onclick="ui.q='';render()">إلغاء البحث</button>`:''}
       <button class="btn o sm" onclick="window.print()">طباعة</button></div></div>
@@ -1084,7 +1084,7 @@ function pStudents(){
        <button class="btn g sm" style="border-radius:8px 0 0 8px;flex-shrink:0" onclick="document.getElementById('sq-stu').focus()">بحث</button>
        <input id="sq-stu" value="" placeholder="ابحث بالاسم أو الرقم"
          style="flex:1;border:1.5px solid var(--gold-2);border-right:none;border-radius:0 8px 8px 0;padding:7px 12px;font-family:var(--f);font-size:13px;outline:none;background:#fff;color:var(--ink)"
-         oninput="ui.sq=this.value;clearTimeout(ui.t);ui.t=setTimeout(render,1200)" onkeydown="event.stopImmediatePropagation();if(event.key==='Enter'){clearTimeout(ui.t);render();}" onkeyup="event.stopImmediatePropagation()" onkeypress="event.stopImmediatePropagation()">
+         oninput="ui.sq=this.value;" onkeydown="event.stopImmediatePropagation();if(event.key==='Enter'||event.key==='Return'){render();}" onkeyup="event.stopImmediatePropagation()" onkeypress="event.stopImmediatePropagation()" onblur="render()">
      </div>
      <div class="sp"></div><button class="btn o sm" onclick="window.print()">طباعة</button></div></div>
    ${!rows.length ? `<div class="none">${show==='removed'?'لا يوجد محذوفون.':'لا يوجد طلاب بعد.'}</div>` :
