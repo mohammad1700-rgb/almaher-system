@@ -3493,22 +3493,86 @@ function pAllHourly(){
 function pStats(){
   if(!isMgr()) return '<div class="card"><div class="none">للمدير فقط.</div></div>';
   const sec=curSec();
+  const period=ui.statPeriod||'monthly';
   const active=S.students.filter(s=>s.section===sec&&s.status==='active');
-  const deleted=S.students.filter(s=>s.section===sec&&s.status==='deleted');
   const circles=S.circles.filter(c=>c.section===sec&&c.active!==false);
   const fols=S.people.filter(p=>p.active&&p.section===sec&&p.role.startsWith('متابع'));
-  const teachers=S.people.filter(p=>p.active&&p.section===sec&&p.role.startsWith('معلم'));
-  function st(l,v,s,c){return '<div class="stat"><div class="l">'+l+'</div><div class="v" style="color:'+(c||'var(--gold)')+'"><b>'+v+'</b></div>'+(s?'<div style="font-size:11px;color:var(--muted)">'+s+'</div>':'')+'</div>';}
-  return '<div class="card"><h2>الإحصاءات الشاملة</h2><div class="stats">'
-    +st('إجمالي الطلاب',active.length,'نشط','var(--navy)')
-    +st('الحلقات',circles.length,'','var(--navy)')
-    +st('المتابعون',fols.length,'','var(--gold)')
-    +st('المعلمون',teachers.length,'','var(--gold)')
-    +st('المحذوفون',deleted.length,'إجمالي','var(--muted)')
-    +'</div><div style="padding:16px"><h3 style="font-size:14px;font-weight:700;margin:0 0 12px">توزيع الطلاب حسب المتابع</h3>'
+
+  // مفاتيح التقارير حسب الفترة
+  const now=new Date();
+  const periodKey=period==='daily'?now.toISOString().slice(0,10)
+    :period==='monthly'?now.toISOString().slice(0,7)
+    :period==='quarterly'?now.getFullYear()+'Q'+Math.ceil((now.getMonth()+1)/3)
+    :period==='yearly'?String(now.getFullYear())
+    :'all';
+
+  if(!S.statsData)S.statsData={};
+  if(!S.statsData[sec])S.statsData[sec]={};
+  if(!S.statsData[sec][periodKey])S.statsData[sec][periodKey]={};
+  const d=S.statsData[sec][periodKey];
+
+  const fields=[
+    {key:'batches',label:'دفعات التسجيل',icon:'📦'},
+    {key:'applicants',label:'المتقدمون',icon:'📋'},
+    {key:'accepted',label:'المقبولون',icon:'✅'},
+    {key:'preliminary',label:'طلاب المرحلة التمهيدية',icon:'🔰'},
+    {key:'avg_regular',label:'متوسط الطلاب المنتظمين',icon:'📊'},
+    {key:'recited',label:'المسمّعون',icon:'🎤'},
+    {key:'regular',label:'الطلاب المنتظمون',icon:'👥'},
+    {key:'finishers',label:'عدد الخاتمين',icon:'🏆'},
+    {key:'faces_memorized',label:'الأوجه المحفوظة',icon:'📖'},
+    {key:'faces_fixed',label:'الأوجه المثبتة',icon:'📌'},
+    {key:'faces_reviewed',label:'أوجه المراجعة',icon:'🔄'},
+  ];
+
+  const periodLabels={daily:'يومي',monthly:'شهري',quarterly:'ربعي',yearly:'سنوي',all:'منذ البداية'};
+
+  const editing=ui.statsEdit;
+
+  return '<div class="card"><h2>الإحصاءات الشاملة</h2>'
+    +'<div class="pad" style="background:var(--cream);border-bottom:1px solid var(--gold-2)">'
+    +'<div class="row" style="gap:8px;flex-wrap:wrap">'
+    +['daily','monthly','quarterly','yearly','all'].map(p=>
+      '<button class="btn '+(period===p?'g':'o')+' sm" onclick="ui.statPeriod=''+p+'';render()">'+periodLabels[p]+'</button>'
+    ).join('')
+    +'<button class="btn '+(editing?'dz':'o')+' sm" style="margin-right:auto" onclick="ui.statsEdit=!ui.statsEdit;render()">'+(editing?'✕ إلغاء':'✏️ تعديل')+'</button>'
+    +(editing?'<button class="btn g sm" onclick="saveStats()">💾 حفظ</button>':'')
+    +'</div>'
+    +'<div style="font-size:12px;color:var(--muted);margin-top:6px">الفترة: '+periodLabels[period]+' — '+periodKey+'</div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0">'
+    +fields.map(f=>'<div style="padding:14px 16px;border-bottom:1px solid var(--line);border-left:1px solid var(--line)">'
+      +'<div style="font-size:11px;color:var(--muted);margin-bottom:4px">'+f.icon+' '+f.label+'</div>'
+      +(editing
+        ?'<input id="sf-'+f.key+'" type="number" value="'+(d[f.key]||'')+'" placeholder="0" style="width:100%;border:1.5px solid var(--gold-2);border-radius:6px;padding:6px 8px;font-size:16px;font-weight:700;font-family:var(--f)" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()">'
+        :'<div style="font-size:22px;font-weight:700;color:var(--navy)">'+(d[f.key]!==undefined?d[f.key]:'—')+'</div>'
+      )+'</div>'
+    ).join('')
+    +'</div>'
+    +'<div style="padding:14px 16px;border-top:1px solid var(--line)">'
+    +'<h3 style="font-size:13px;font-weight:700;margin:0 0 10px">توزيع الطلاب الحالي</h3>'
     +'<div class="tw"><table class="d"><thead><tr><th>المتابع</th><th>الطلاب</th></tr></thead><tbody>'
     +fols.map(f=>'<tr><td class="nm">'+esc(f.name)+'</td><td>'+active.filter(s=>s.fid===f.id).length+'</td></tr>').join('')
     +'</tbody></table></div></div></div>';
+}
+
+function saveStats(){
+  const sec=curSec();
+  const period=ui.statPeriod||'monthly';
+  const now=new Date();
+  const periodKey=period==='daily'?now.toISOString().slice(0,10)
+    :period==='monthly'?now.toISOString().slice(0,7)
+    :period==='quarterly'?now.getFullYear()+'Q'+Math.ceil((now.getMonth()+1)/3)
+    :period==='yearly'?String(now.getFullYear()):'all';
+  if(!S.statsData)S.statsData={};
+  if(!S.statsData[sec])S.statsData[sec]={};
+  const d={};
+  ['batches','applicants','accepted','preliminary','avg_regular','recited','regular','finishers','faces_memorized','faces_fixed','faces_reviewed'].forEach(k=>{
+    const el=document.getElementById('sf-'+k);
+    if(el&&el.value!=='')d[k]=+el.value;
+  });
+  S.statsData[sec][periodKey]=d;
+  save();ui.statsEdit=false;flash('تم حفظ الإحصاءات.','ok');render();
 }
 
 function pTasks(){
