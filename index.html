@@ -894,7 +894,7 @@ function pPeople(){
     <div class="pad noprint"><div class="row">
       <div style="display:flex;align-items:center;gap:0;max-width:400px">
        <button class="btn g sm" style="border-radius:8px 0 0 8px;flex-shrink:0" onclick="document.getElementById('sq-ppl').focus()">بحث</button>
-       <input id="sq-ppl" value="${esc(q)}" placeholder="ابحث في الطاقم كله بالاسم أو النطاق"
+       <input id="sq-ppl" value="" placeholder="ابحث في الطاقم كله بالاسم أو النطاق"
          style="flex:1;border:1.5px solid var(--gold-2);border-right:none;border-radius:0 8px 8px 0;padding:7px 12px;font-family:var(--f);font-size:13px;outline:none;background:#fff;color:var(--ink)"
          oninput="ui.q=this.value;clearTimeout(ui.t);ui.t=setTimeout(render,1200)" onkeydown="event.stopImmediatePropagation();if(event.key==='Enter'){clearTimeout(ui.t);render();}" onkeyup="event.stopImmediatePropagation()" onkeypress="event.stopImmediatePropagation()">
      </div>
@@ -1082,7 +1082,7 @@ function pStudents(){
      <button class="btn ${show==='removed'?'':'o'} sm" onclick="ui.show='removed';render()">المحذوفون (${studentsIn('removed').length})</button>
 <div style="display:flex;align-items:center;gap:0;max-width:340px">
        <button class="btn g sm" style="border-radius:8px 0 0 8px;flex-shrink:0" onclick="document.getElementById('sq-stu').focus()">بحث</button>
-       <input id="sq-stu" value="${esc(q)}" placeholder="ابحث بالاسم أو الرقم"
+       <input id="sq-stu" value="" placeholder="ابحث بالاسم أو الرقم"
          style="flex:1;border:1.5px solid var(--gold-2);border-right:none;border-radius:0 8px 8px 0;padding:7px 12px;font-family:var(--f);font-size:13px;outline:none;background:#fff;color:var(--ink)"
          oninput="ui.sq=this.value;clearTimeout(ui.t);ui.t=setTimeout(render,1200)" onkeydown="event.stopImmediatePropagation();if(event.key==='Enter'){clearTimeout(ui.t);render();}" onkeyup="event.stopImmediatePropagation()" onkeypress="event.stopImmediatePropagation()">
      </div>
@@ -1267,7 +1267,7 @@ function pCircles(){
     <div class="pad noprint"><div class="row">
 <div style="display:flex;align-items:center;gap:0;max-width:380px">
        <button class="btn g sm" style="border-radius:8px 0 0 8px;flex-shrink:0" onclick="document.getElementById('sq-cir').focus()">بحث</button>
-       <input id="sq-cir" value="${esc(q)}" placeholder="ابحث باسم المعلم أو المتابع أو المكان"
+       <input id="sq-cir" value="" placeholder="ابحث باسم المعلم أو المتابع أو المكان"
          style="flex:1;border:1.5px solid var(--gold-2);border-right:none;border-radius:0 8px 8px 0;padding:7px 12px;font-family:var(--f);font-size:13px;outline:none;background:#fff;color:var(--ink)"
          oninput="ui.cq=this.value;clearTimeout(ui.t);ui.t=setTimeout(render,250)">
      </div>
@@ -3037,23 +3037,23 @@ function render(){
     <div class="foot">جمعية الماهر القرآنية — برنامج الحفظ والتثبيت</div></div>
   ${tabbar()}`;
   femize($('app'));
-  /* استعادة التركيز والقيمة الكاملة والموضع بعد الرسم */
-  if(_focusedId){
-    const _focusedVal = _focused ? _focused.value : null;
-    requestAnimationFrame(()=>{
+  /* ملء حقول البحث من الحالة واستعادة التركيز */
+  requestAnimationFrame(()=>{
+    const sqMap = {'sq-ppl': ui.q||'', 'sq-stu': ui.sq||'', 'sq-cir': ui.cq||''};
+    Object.entries(sqMap).forEach(([id, val])=>{
+      const el = document.getElementById(id);
+      if(el) el.value = val;
+    });
+    if(_focusedId){
       const el = document.getElementById(_focusedId);
       if(el && el.tagName === 'INPUT'){
-        // استعادة القيمة الكاملة بما فيها المسافات
-        if(_focusedVal !== null && el.value !== _focusedVal){
-          el.value = _focusedVal;
-        }
         el.focus();
         if(_selStart !== null){
           try{ el.setSelectionRange(_selStart, _selEnd); }catch(e){}
         }
       }
-    });
-  }
+    }
+  });
 }
 const ICO = {
  home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
