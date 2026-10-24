@@ -4034,6 +4034,52 @@ function calcOnTimeScore(w, fid){
   if(total===0) return 0;
   return Math.round((ontime/total)*20);
 }
+
+function getWarnMsg(st, flagKey, flagCount, indharCount){
+  var typeLabels={
+    'w':'عدم الإرسال في الواتساب',
+    'p':'عدم الإشعار في البوابة الإلكترونية',
+    'm':'عدم الإشعار بالمراجعة الفردية',
+    'a':'الغياب عن التسميع',
+    'r':'عدم التجاوب مع المتابع',
+    'plan':'التأخر عن خطة الطالب',
+    'qday':'الغياب عن اليوم القرآني',
+    'rep':'عدم الالتزام بتكرار المحفوظ',
+    'fail':'عدم اجتياز الاختبار المرحلي'
+  };
+  var limits={'w':6,'p':6,'m':6,'a':3,'r':2,'plan':4,'fail':15};
+  var prefix=flagKey.split('_')[0];
+  var typeName=typeLabels[prefix]||'مخالفة';
+  var limit=limits[prefix]||6;
+  var isDirectIndhar=prefix==='qday'||prefix==='rep';
+  
+  var msg = 'تنبيه | برنامج الحفظ والتثبيت\n\n';
+  msg += 'السلام عليكم ورحمة الله وبركاته\n\n';
+  msg += 'الطالب/ة: ' + st.name + '\n\n';
+  msg += 'نود إشعارك بأنه تم تسجيل *تنبيه رقم (' + flagCount + ')* بسبب:\n';
+  msg += '*' + typeName + '*\n\n';
+  
+  if(isDirectIndhar){
+    msg += '⚠️ هذا التنبيه يترتب عليه *إنذار مباشر*.\n';
+  } else {
+    msg += 'علماً بأن عدد التنبيهات السابقة في هذا المجال: *' + (flagCount-1) + '*\n\n';
+    msg += '⚠️ عند بلوغ ' + limit + ' تنبيهات يترتب عليك إنذار واحد.\n';
+  }
+  msg += '⚠️ عند بلوغ 3 إنذارات يُطوى قيدك من البرنامج.\n\n';
+  if(indharCount > 0){
+    msg += '🚨 *إجمالي الإنذارات الحالية: ' + indharCount + '*\n\n';
+  }
+  msg += 'جمعية الماهر القرآنية | برنامج الحفظ والتثبيت';
+  return msg;
+}
+
+function openWhatsApp(phone, msg){
+  var clean = (phone||'').replace(/[^0-9]/g,'');
+  if(!clean){ alert('لا يوجد رقم جوال مسجل للطالب'); return; }
+  if(clean.startsWith('0')) clean = '966' + clean.slice(1);
+  var url = 'https://wa.me/' + clean + '?text=' + encodeURIComponent(msg);
+  window.open(url, '_blank');
+}
 function render(){
   if(!SESSION){ $('app').innerHTML = loginView(); return; }
   /* حفظ التركيز والموضع قبل الرسم */
