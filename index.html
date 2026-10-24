@@ -4173,19 +4173,42 @@ function showNotifAndShare(st, flagKey, flagCount, warnMax, typeName, fieldName)
   var circle=S.circles.find(function(c){return c.id===st.cid;});
   var html=genNotifHTML(st,flagKey,flagCount,warnMax,typeName,fieldName,follower,circle);
   
-  // Open in new window for printing/sharing
-  var win=window.open('','_blank','width=850,height=900,scrollbars=yes');
-  win.document.write(html);
-  win.document.close();
+  // Create iframe to render HTML then capture as image
+  var iframe=document.createElement('iframe');
+  iframe.style.cssText='position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:none;';
+  document.body.appendChild(iframe);
+  iframe.contentDocument.write(html);
+  iframe.contentDocument.close();
   
-  // Also send via WhatsApp
-  var msg=getWarnMsg(st,flagKey,flagCount,0);
-  var phone=(st.phone||'').replace(/[^0-9]/g,'');
-  if(phone){
-    if(phone.startsWith('0')) phone='966'+phone.slice(1);
-    var waUrl='https://wa.me/'+phone+'?text='+encodeURIComponent(msg);
-    setTimeout(function(){ window.open(waUrl,'_blank'); }, 500);
-  }
+  setTimeout(function(){
+    // Use html2canvas to capture
+    var script=iframe.contentDocument.createElement('script');
+    script.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    script.onload=function(){
+      iframe.contentWindow.html2canvas(iframe.contentDocument.querySelector('.page'),{
+        scale:2, useCORS:true, backgroundColor:'#f9f6f0'
+      }).then(function(canvas){
+        // Download image
+        var link=document.createElement('a');
+        link.download='تنبيه_'+esc(st.name).replace(/ /g,'_')+'.png';
+        link.href=canvas.toDataURL('image/png');
+        link.click();
+        document.body.removeChild(iframe);
+        
+        // Open WhatsApp after short delay
+        var phone=(st.phone||'').replace(/[^0-9]/g,'');
+        if(phone){
+          if(phone.startsWith('0')) phone='966'+phone.slice(1);
+          var waUrl='https://wa.me/'+phone+'?text='+encodeURIComponent('السلام عليكم، يرجى الاطلاع على التنبيه المرفق.');
+          setTimeout(function(){ window.open(waUrl,'_blank'); }, 800);
+          flash('✅ تم تحميل صورة التنبيه — أرفقها في واتساب الذي سيفتح الآن.','ok');
+        } else {
+          flash('✅ تم تحميل صورة التنبيه. لا يوجد رقم جوال مسجل للطالب.','warn');
+        }
+      });
+    };
+    iframe.contentDocument.head.appendChild(script);
+  }, 1500);
 }
 function render(){
   if(!SESSION){ $('app').innerHTML = loginView(); return; }
