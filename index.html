@@ -1457,9 +1457,9 @@ function curFid(){ const f=followersIn(); if(!f.length) return null;
 function dayChk(sid, prefix, date, val, label){
   var key = prefix + date;
   var checked = val !== 0 ? 'checked' : '';
-  return '<label style="display:flex;align-items:center;gap:4px;margin-bottom:2px;cursor:pointer">'
-    + '<input type="checkbox" ' + checked + ' data-sid="' + sid + '" data-key="' + key + '" onchange="setDayFlag(this)">'
-    + label + '</label>';
+  return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;white-space:nowrap">'
+    + '<input type="checkbox" ' + checked + ' data-sid="' + sid + '" data-key="' + key + '" onchange="setDayFlag(this)" style="flex-shrink:0;width:15px;height:15px;cursor:pointer">'
+    + '<span style="font-size:10px">' + label + '</span></div>';
 }
 
 function pWeekly(){
