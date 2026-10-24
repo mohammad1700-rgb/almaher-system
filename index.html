@@ -1641,9 +1641,7 @@ function setDayFlag(inp){
     const msg='تنبيه #'+warnNum+' على '+esc(st.name)+'\n'+'السبب: '+typeName+indharInfo;
 
     
-    if(confirm(msg+'
-
-هل تريد الذهاب لصفحة السجلات الإجرائية لإرسال الإنذار؟')){
+    if(confirm(msg+'\n\nهل تريد الذهاب لصفحة السجلات الإجرائية؟')){
       ui.sid=sid;
       PAGE='actions';
       render();
