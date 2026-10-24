@@ -1636,10 +1636,10 @@ function setDayFlag(inp){
     const currentWarn=warnCounts[prefix]||0;
     
     // عرض تنبيه مع خيار الذهاب للسجلات
-    const msg='⚠️ تنبيه #'+currentWarn+' على '+esc(st.name)+'
-السبب: '+typeName
-      +(totalIndhar>0?'
-🚨 إجمالي الإنذارات: '+totalIndhar:'');
+    const warnNum=warnCounts[prefix]||0;
+    const indharInfo=totalIndhar>0?' — إنذارات: '+totalIndhar:'';
+    const msg='تنبيه #'+warnNum+' على '+esc(st.name)+'\n'+'السبب: '+typeName+indharInfo;
+
     
     if(confirm(msg+'
 
