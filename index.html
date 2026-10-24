@@ -1610,7 +1610,49 @@ function setDayFlag(inp){
   if(!S.flags[WEEK][sid]) S.flags[WEEK][sid]={};
   S.flags[WEEK][sid][key]=checked?1:0;
   S.flags[WEEK][sid][key+'_at']=Date.now();
-  save(); render();
+  save();
+  
+  // إذا تخلف الطالب — انتقل لصفحة السجلات الإجرائية مع تحديد الطالب
+  if(!checked){
+    const prefix=key.split('_')[0];
+    const typeLabels={w:'عدم الإرسال في الواتساب',m:'عدم الإشعار (مراجعة)',a:'الغياب عن التسميع',r:'عدم التجاوب'};
+    const warnCounts={w:0,m:0,a:0,r:0};
+    const fl2=S.flags[WEEK][sid]||{};
+    Object.keys(fl2).forEach(function(k){
+      if(fl2[k]===0&&!k.endsWith('_at')){
+        const p=k.split('_')[0];
+        if(warnCounts[p]!==undefined) warnCounts[p]++;
+      }
+    });
+    const warnSend=(warnCounts.w||0)+(warnCounts.m||0);
+    const warnAbs=warnCounts.a||0;
+    const warnResp=warnCounts.r||0;
+    const indharSend=Math.floor(warnSend/6);
+    const indharAbs=Math.floor(warnAbs/3);
+    const indharResp=Math.floor(warnResp/2);
+    const totalIndhar=indharSend+indharAbs+indharResp;
+    
+    const typeName=typeLabels[prefix]||'تنبيه';
+    const currentWarn=warnCounts[prefix]||0;
+    
+    // عرض تنبيه مع خيار الذهاب للسجلات
+    const msg='⚠️ تنبيه #'+currentWarn+' على '+esc(st.name)+'
+السبب: '+typeName
+      +(totalIndhar>0?'
+🚨 إجمالي الإنذارات: '+totalIndhar:'');
+    
+    if(confirm(msg+'
+
+هل تريد الذهاب لصفحة السجلات الإجرائية لإرسال الإنذار؟')){
+      ui.sid=sid;
+      PAGE='actions';
+      render();
+    } else {
+      render();
+    }
+    return;
+  }
+  render();
 }
 function setPlanCheck(inp){
   const sid=+inp.dataset.sid, checked=inp.checked;
