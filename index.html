@@ -3377,6 +3377,17 @@ function pStaffData(){
           </div></div>
 
         </div>
+      ${ui.sdEdit ? (() => {
+        return '<div class="sd-sec"><div class="sd-st">✏️ تعديل البيانات</div><div style="padding:16px;display:flex;flex-direction:column;gap:12px">'
+          +'<div class="fld"><label>الاسم</label><input id="se-name" value="'+esc(p.name||'')+'" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>'
+          +'<div class="fld"><label>الجوال</label><input id="se-phone" value="'+esc(p.phone||'')+'" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>'
+          +'<div class="fld"><label>البريد الإلكتروني</label><input id="se-email" value="'+esc(p.email||'')+'" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>'
+          +'<div class="fld"><label>رقم الهوية</label><input id="se-nid" value="'+esc(p.nid||'')+'" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>'
+          +'<div class="fld"><label>المكافأة الشهرية</label><input id="se-salary" type="number" value="'+esc(String(p.salary||''))+'" style="width:100%" onkeydown="event.stopImmediatePropagation()" onkeyup="event.stopImmediatePropagation()"></div>'
+          +'<div class="row"><button class="btn g" onclick="saveStaffEdit('+ui.sdOpen+')">💾 حفظ</button>'
+          +'<button class="btn o" onclick="ui.sdEdit=false;render()">إلغاء</button></div>'
+          +'</div></div>';
+      })() : ''}
       </div>`;
     }
   }
@@ -3401,6 +3412,26 @@ function pStaffData(){
 
 
 
+
+function saveStaffEdit(idx){
+  if(idx===null||idx===undefined) return;
+  const p=STAFF_DATA[idx];
+  if(!p) return;
+  const n=document.getElementById('se-name');
+  const ph=document.getElementById('se-phone');
+  const em=document.getElementById('se-email');
+  const ni=document.getElementById('se-nid');
+  const sa=document.getElementById('se-salary');
+  if(n) p.name=n.value.trim()||p.name;
+  if(ph) p.phone=ph.value.trim();
+  if(em) p.email=em.value.trim();
+  if(ni) p.nid=ni.value.trim();
+  if(sa) p.salary=sa.value.trim();
+  try{localStorage.setItem('maher_staff_edits',JSON.stringify(STAFF_DATA));}catch(e){}
+  ui.sdEdit=false;
+  flash('تم حفظ بيانات '+p.name+' بنجاح.','ok');
+  render();
+}
 function openStaffCard(idx){
   ui.sdOpen = idx;
 }
