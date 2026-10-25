@@ -4229,5 +4229,11 @@ function showNotifAndShare(st, flagKey, flagCount, warnMax, typeName, fieldName)
   win.document.write(fullHtml);
   win.document.close();
 }
+
+// ─── تشغيل النظام عند تحميل الصفحة ───
+document.addEventListener('DOMContentLoaded', function(){
+  keepSession();
+  render();
+});
 </script>
 </html>
